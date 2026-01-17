@@ -21,7 +21,29 @@ export const useMenu = () => {
   useEffect(() => {
     try {
       const loadedItems = storageService.loadMenu();
-      setMenuItems(loadedItems);
+      
+      // Migrate old format items to new format
+      const migratedItems = loadedItems.map(item => ({
+        ...item,
+        description: item.description || '',
+        category: item.category || 'Other',
+        isVeg: item.isVeg !== undefined ? item.isVeg : true,
+        isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+      }));
+      
+      setMenuItems(migratedItems);
+      
+      // Save migrated items back to storage if migration happened
+      if (migratedItems.some((item, idx) => 
+        item.description !== loadedItems[idx]?.description ||
+        item.category !== loadedItems[idx]?.category ||
+        item.isVeg !== loadedItems[idx]?.isVeg ||
+        item.isAvailable !== loadedItems[idx]?.isAvailable
+      )) {
+        console.log('🔄 Migrating old menu items to new format...');
+        storageService.saveMenu(migratedItems);
+      }
+      
       setError(null);
     } catch (err) {
       setError('Failed to load menu data');
