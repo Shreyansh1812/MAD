@@ -49,6 +49,13 @@ export const EditorPage = () => {
     setStallData(data);
   };
 
+  // Auto-regenerate QR when menu or stall data changes
+  useEffect(() => {
+    if (menuItems.length > 0) {
+      generateQR(menuItems, stallData);
+    }
+  }, [menuItems, stallData, generateQR]);
+
   // Check if service worker is active
   useEffect(() => {
     const checkServiceWorker = () => {

@@ -3,7 +3,6 @@
  * Generates and displays QR code for menu
  */
 
-import { useEffect } from 'react';
 import { QrCode, Download, RefreshCw, Sparkles, Info } from 'lucide-react';
 import { Card, CardHeader, CardBody, CardFooter } from '../Shared/Card';
 import { Button } from '../Shared/Button';
@@ -20,14 +19,8 @@ export const QRGenerator = ({
   onDownload,
   onToast
 }) => {
-  // Auto-generate QR when menu or stall data changes
-  useEffect(() => {
-    if (menuItems.length > 0) {
-      onGenerate(menuItems, stallData);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuItems.length, stallData?.stallName, stallData?.waitTime]); // Trigger when menu items count or stall data changes
-
+  // QR generation is now handled by EditorPage useEffect
+  
   const handleRegenerate = () => {
     onGenerate(menuItems, stallData);
     onToast?.('QR code regenerated successfully! ✨', 'success');
