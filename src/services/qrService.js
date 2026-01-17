@@ -53,20 +53,22 @@ class QRService {
   async generateMenuQR(menuItems, options = {}) {
     try {
       // Create a compact menu data structure
-      const menuData = {
-        v: '1.0', // Version
-        t: Date.now(), // Timestamp
-        items: menuItems.map(item => ({
-          n: item.name,
-          p: item.price,
-        })),
-      };
+      const compactData = menuItems.map(item => ({
+        n: item.name,
+        p: item.price,
+      }));
 
-      // Encode as base64 for compact representation
-      const encodedData = btoa(JSON.stringify(menuData));
+      // Convert to JSON and handle Unicode characters
+      const jsonString = JSON.stringify(compactData);
       
-      // Create a data URI that can be decoded by the menu viewer
-      const qrData = `${window.location.origin}${window.location.pathname}#menu=${encodedData}`;
+      // Encode URI component first to handle special characters (₹, etc.)
+      const encodedJSON = encodeURIComponent(jsonString);
+      
+      // Convert to base64
+      const base64Data = btoa(encodedJSON);
+      
+      // Create URL with hash parameter
+      const qrData = `${window.location.origin}${window.location.pathname}#/view?m=${base64Data}`;
 
       return await this.generateQRCode(qrData, options);
     } catch (error) {
@@ -101,18 +103,26 @@ class QRService {
    */
   decodeMenuFromHash(hash) {
     try {
-      // Extract menu data from hash (format: #menu=base64data)
-      const match = hash.match(/^#menu=(.+)$/);
+      // Extract menu data from hash (format: #/view?m=base64data)
+      const match = hash.match(/^#\/view\?m=(.+)$/);
       if (!match) {
         return null;
       }
 
-      const encodedData = match[1];
-      const jsonData = atob(encodedData);
-      const menuData = JSON.parse(jsonData);
+      const base64Data = match[1];
+      
+      // Decode from base64
+      const encodedJSON = atob(base64Data);
+      
+      // Decode URI component to restore special characters
+      const jsonString = decodeURIComponent(encodedJSON);
+      
+      // Parse JSON
+      const compactData = JSON.parse(jsonString);
 
-      // Transform back to full format
-      return menuData.items.map(item => ({
+      // Transform back to full format with IDs
+      return compactData.map((item, index) => ({
+        id: `qr-${index}`,
         name: item.n,
         price: item.p,
       }));

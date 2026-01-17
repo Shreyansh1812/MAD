@@ -3,29 +3,16 @@
  * Customer-facing menu view (accessed via QR code)
  */
 
-import { UtensilsCrossed, ArrowLeft, Clock } from 'lucide-react';
-import { useLocalMenu } from '../hooks/useLocalMenu';
+import { UtensilsCrossed, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/Shared/Button';
 import { EmptyState } from '../components/Shared/EmptyState';
 import { Alert } from '../components/Shared/Alert';
 import { formatPrice } from '../utils/validation';
 
-export const MenuViewPage = () => {
-  const { menuItems, isLoading, error, hasMenu } = useLocalMenu();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500">
-        <div className="text-center">
-          <div className="relative mb-6">
-            <div className="animate-spin rounded-full h-20 w-20 border-4 border-white/30 border-t-white mx-auto"></div>
-            <UtensilsCrossed className="absolute inset-0 m-auto text-white" size={36} />
-          </div>
-          <p className="text-xl text-white font-bold">Loading menu...</p>
-        </div>
-      </div>
-    );
-  }
+export const MenuViewPage = ({ menuData }) => {
+  const menuItems = menuData || [];
+  const hasMenu = menuItems && menuItems.length > 0;
+  const error = !menuData;
 
   if (error || !hasMenu) {
     return (
