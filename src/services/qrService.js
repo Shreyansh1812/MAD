@@ -67,8 +67,13 @@ class QRService {
       // Convert to base64
       const base64Data = btoa(encodedJSON);
       
-      // Create URL with hash parameter
-      const qrData = `${window.location.origin}${window.location.pathname}#/view?m=${base64Data}`;
+      // Create URL with hash parameter - use explicit origin
+      const origin = window.location.origin || 'https://mad-eosin.vercel.app';
+      const qrData = `${origin}/#/view?m=${base64Data}`;
+      
+      console.log('Generated QR URL:', qrData);
+      console.log('Menu items count:', menuItems.length);
+      console.log('Base64 data length:', base64Data.length);
 
       return await this.generateQRCode(qrData, options);
     } catch (error) {
@@ -103,29 +108,39 @@ class QRService {
    */
   decodeMenuFromHash(hash) {
     try {
+      console.log('Decoding hash:', hash);
+      
       // Extract menu data from hash (format: #/view?m=base64data)
       const match = hash.match(/^#\/view\?m=(.+)$/);
       if (!match) {
+        console.log('Hash does not match expected format');
         return null;
       }
 
       const base64Data = match[1];
+      console.log('Extracted base64 length:', base64Data.length);
       
       // Decode from base64
       const encodedJSON = atob(base64Data);
+      console.log('Decoded from base64');
       
       // Decode URI component to restore special characters
       const jsonString = decodeURIComponent(encodedJSON);
+      console.log('Decoded URI component');
       
       // Parse JSON
       const compactData = JSON.parse(jsonString);
+      console.log('Parsed menu items:', compactData.length);
 
       // Transform back to full format with IDs
-      return compactData.map((item, index) => ({
+      const menuItems = compactData.map((item, index) => ({
         id: `qr-${index}`,
         name: item.n,
         price: item.p,
       }));
+      
+      console.log('Returning menu items:', menuItems);
+      return menuItems;
     } catch (error) {
       console.error('Failed to decode menu from hash:', error);
       return null;
