@@ -10,10 +10,15 @@ import { MenuViewPage } from './pages/MenuViewPage';
 function App() {
   const [isViewMode, setIsViewMode] = useState(false);
   const [sharedMenu, setSharedMenu] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [parseError, setParseError] = useState(null);
 
   useEffect(() => {
     // Check if URL contains menu data (view mode)
     const parseMenuFromURL = () => {
+      setIsLoading(true);
+      setParseError(null);
+      
       try {
         const hash = window.location.hash;
         console.log('🔍 Current hash:', hash);
@@ -23,6 +28,7 @@ function App() {
           console.log('📝 Editor mode - no /view in hash');
           setIsViewMode(false);
           setSharedMenu(null);
+          setIsLoading(false);
           return;
         }
 
@@ -34,6 +40,7 @@ function App() {
           console.log('⚠️ No query parameters found in hash');
           setIsViewMode(true);
           setSharedMenu(null);
+          setIsLoading(false);
           return;
         }
 
@@ -46,6 +53,7 @@ function App() {
           console.log('⚠️ No "m" parameter in URL');
           setIsViewMode(true);
           setSharedMenu(null);
+          setIsLoading(false);
           return;
         }
 
@@ -71,6 +79,7 @@ function App() {
         console.log('✨ Menu items ready:', menuItems);
         setSharedMenu(menuItems);
         setIsViewMode(true);
+        setIsLoading(false);
         
       } catch (error) {
         console.error('❌ Error parsing menu from URL:', error);
@@ -80,9 +89,10 @@ function App() {
           hash: window.location.hash
         });
         
-        // Still show view mode but with null data (will show error)
+        setParseError(error.message);
         setIsViewMode(true);
         setSharedMenu(null);
+        setIsLoading(false);
       }
     };
 
@@ -95,6 +105,40 @@ function App() {
       window.removeEventListener('hashchange', parseMenuFromURL);
     };
   }, []);
+
+  // Show loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500">
+        <div className="text-center">
+          <div className="relative mb-6">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-white/30 border-t-white mx-auto"></div>
+          </div>
+          <p className="text-xl text-white font-bold">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if parsing failed
+  if (parseError && isViewMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-orange-500 p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Menu</h1>
+          <p className="text-gray-600 mb-4">{parseError}</p>
+          <p className="text-sm text-gray-500">Please try scanning the QR code again or contact the vendor.</p>
+          <button 
+            onClick={() => window.location.href = window.location.origin}
+            className="mt-6 bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700"
+          >
+            Go to Menu Editor
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return isViewMode ? <MenuViewPage menuData={sharedMenu} /> : <EditorPage />;
 }
