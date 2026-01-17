@@ -29,6 +29,7 @@ export const useQRCode = () => {
 
     setIsGenerating(true);
     setError(null);
+    setQrCodeUrl(null); // Clear existing QR code first
 
     try {
       const dataUrl = await qrService.generateMenuQR(menuItems, options);

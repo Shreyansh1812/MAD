@@ -24,7 +24,13 @@ export const QRGenerator = ({
     if (menuItems.length > 0) {
       onGenerate(menuItems);
     }
-  }, [menuItems, onGenerate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuItems.length]); // Only trigger when menu items count changes
+
+  const handleRegenerate = () => {
+    onGenerate(menuItems);
+    onToast?.('QR code regenerated successfully! ✨', 'success');
+  };
 
   const handleDownload = () => {
     onDownload();
@@ -48,7 +54,7 @@ export const QRGenerator = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onGenerate(menuItems)}
+              onClick={handleRegenerate}
               disabled={menuItems.length === 0}
               className="hover:scale-105"
             >
