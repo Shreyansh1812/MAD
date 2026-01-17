@@ -67,9 +67,10 @@ class QRService {
       // Convert to base64
       const base64Data = btoa(encodedJSON);
       
-      // Create URL with hash parameter - use explicit origin
-      const origin = window.location.origin || 'https://mad-eosin.vercel.app';
-      const qrData = `${origin}/#/view?m=${base64Data}`;
+      // Use production URL (Vercel alias) instead of window.location.origin
+      // This ensures QR codes always point to the stable production URL
+      const productionURL = 'https://mad-eosin.vercel.app';
+      const qrData = `${productionURL}/#/view?m=${base64Data}`;
       
       console.log('Generated QR URL:', qrData);
       console.log('Menu items count:', menuItems.length);

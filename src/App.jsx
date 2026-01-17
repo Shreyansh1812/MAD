@@ -23,8 +23,8 @@ function App() {
         const hash = window.location.hash;
         console.log('🔍 Current hash:', hash);
         
-        // Check if hash contains view route
-        if (!hash.includes('/view')) {
+        // Check if hash starts with view route
+        if (!hash.startsWith('#/view')) {
           console.log('📝 Editor mode - no /view in hash');
           setIsViewMode(false);
           setSharedMenu(null);

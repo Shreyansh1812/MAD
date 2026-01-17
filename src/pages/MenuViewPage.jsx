@@ -3,7 +3,7 @@
  * Customer-facing menu view (accessed via QR code)
  */
 
-import { UtensilsCrossed, ArrowLeft } from 'lucide-react';
+import { UtensilsCrossed, ArrowLeft, Clock } from 'lucide-react';
 import { Button } from '../components/Shared/Button';
 import { EmptyState } from '../components/Shared/EmptyState';
 import { Alert } from '../components/Shared/Alert';
