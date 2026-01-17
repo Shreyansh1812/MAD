@@ -13,8 +13,9 @@ export default defineConfig({
         short_name: 'QuickMenu',
         description: 'Offline-first QR menu generator for vendors',
         theme_color: '#0ea5e9',
-        background_color: '#ffffff',
+        background_color: '#0ea5e9',
         display: 'standalone',
+        orientation: 'portrait',
         icons: [
           {
             src: '/vite.svg',

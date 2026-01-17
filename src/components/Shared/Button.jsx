@@ -3,6 +3,8 @@
  * Reusable button with variants and states
  */
 
+import { useHaptics } from '../../hooks/useHaptics';
+
 export const Button = ({ 
   children, 
   variant = 'primary', 
@@ -11,8 +13,10 @@ export const Button = ({
   disabled = false,
   type = 'button',
   className = '',
+  enableHaptics = true,
   ...props 
 }) => {
+  const { lightTap } = useHaptics();
   const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-3 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none shadow-sm hover:shadow-md active:scale-95';
   
   const variants = {
@@ -29,10 +33,17 @@ export const Button = ({
     lg: 'px-8 py-4 text-lg',
   };
 
+  const handleClick = (e) => {
+    if (enableHaptics && !disabled) {
+      lightTap();
+    }
+    onClick?.(e);
+  };
+
   return (
     <button
       type={type}
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}

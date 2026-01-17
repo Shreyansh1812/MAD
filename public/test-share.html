@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Share API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0284c7;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Android Share API Debugger</h1>
+    
+    <div class="test-section">
+        <h2>Device Detection</h2>
+        <div id="detection"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 1: Check API Support</h2>
+        <button onclick="checkSupport()">Check Web Share API Support</button>
+        <div id="support-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Test Share Dialog</h2>
+        <button onclick="testShare()" id="shareBtn">Open Native Share Sheet</button>
+        <div id="share-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Test Wake Lock</h2>
+        <button onclick="testWakeLock()" id="wakeLockBtn">Request Wake Lock</button>
+        <button onclick="releaseWakeLock()" id="releaseBtn" disabled>Release Wake Lock</button>
+        <div id="wakelock-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Instructions for Testing QuickMenu App</h2>
+        <ol>
+            <li><strong>On Android Device:</strong> Open Chrome/Edge browser</li>
+            <li><strong>Navigate to:</strong> <code>http://192.168.29.34:4173</code></li>
+            <li><strong>Add menu items</strong> in the MenuEditor</li>
+            <li><strong>Generate QR code</strong> (scroll down to QR section)</li>
+            <li><strong>Look for:</strong> "Share Menu" button (if supported) or "Copy Link" button</li>
+            <li><strong>Click button:</strong> Native share sheet should appear</li>
+        </ol>
+        <p><strong>Note:</strong> Web Share API only works on:</p>
+        <ul>
+            <li>✅ Android Chrome/Edge (version 89+)</li>
+            <li>✅ iOS Safari (version 12.2+)</li>
+            <li>❌ Desktop browsers (shows fallback "Copy Link")</li>
+        </ul>
+    </div>
+
+    <script>
+        let wakeLock = null;
+
+        // Display device info
+        window.addEventListener('load', () => {
+            const info = `
+                <pre>User Agent: ${navigator.userAgent}
+
+Platform: ${navigator.platform}
+Screen: ${window.screen.width}x${window.screen.height}
+Language: ${navigator.language}</pre>
+            `;
+            document.getElementById('detection').innerHTML = info;
+        });
+
+        function checkSupport() {
+            const statusDiv = document.getElementById('support-status');
+            const hasShare = 'share' in navigator;
+            const hasWakeLock = 'wakeLock' in navigator;
+            const hasVibrate = 'vibrate' in navigator;
+
+            statusDiv.innerHTML = `
+                <div class="status ${hasShare ? 'success' : 'error'}">
+                    ${hasShare ? '✅' : '❌'} Web Share API: ${hasShare ? 'SUPPORTED' : 'NOT SUPPORTED'}
+                </div>
+                <div class="status ${hasWakeLock ? 'success' : 'error'}">
+                    ${hasWakeLock ? '✅' : '❌'} Wake Lock API: ${hasWakeLock ? 'SUPPORTED' : 'NOT SUPPORTED'}
+                </div>
+                <div class="status ${hasVibrate ? 'success' : 'error'}">
+                    ${hasVibrate ? '✅' : '❌'} Vibration API: ${hasVibrate ? 'SUPPORTED' : 'NOT SUPPORTED'}
+                </div>
+                <div class="status info">
+                    ${hasShare && hasWakeLock && hasVibrate ? 
+                        '🎉 All Android features supported! Your device is ready.' : 
+                        '⚠️ Some features not available. Use Android Chrome/Edge for full support.'}
+                </div>
+            `;
+        }
+
+        async function testShare() {
+            const statusDiv = document.getElementById('share-status');
+            
+            if (!('share' in navigator)) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Web Share API not supported on this device/browser.
+                        <br>Try on Android Chrome or iOS Safari.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                statusDiv.innerHTML = '<div class="status info">📤 Opening share sheet...</div>';
+                
+                await navigator.share({
+                    title: 'QuickMenu Test',
+                    text: 'Check out this menu! 🍽️',
+                    url: 'https://mad-eosin.vercel.app/#/view?m=test'
+                });
+                
+                statusDiv.innerHTML = '<div class="status success">✅ Share completed successfully!</div>';
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    statusDiv.innerHTML = '<div class="status info">ℹ️ Share cancelled by user</div>';
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">❌ Share failed: ${err.message}</div>`;
+                }
+            }
+        }
+
+        async function testWakeLock() {
+            const statusDiv = document.getElementById('wakelock-status');
+            
+            if (!('wakeLock' in navigator)) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Wake Lock API not supported on this device/browser.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ Wake Lock activated! Screen won't auto-lock.
+                        <br>Try waiting 30+ seconds - screen should stay on.
+                    </div>
+                `;
+                document.getElementById('releaseBtn').disabled = false;
+                document.getElementById('wakeLockBtn').disabled = true;
+
+                wakeLock.addEventListener('release', () => {
+                    statusDiv.innerHTML += '<div class="status info">ℹ️ Wake Lock released</div>';
+                    document.getElementById('releaseBtn').disabled = true;
+                    document.getElementById('wakeLockBtn').disabled = false;
+                });
+            } catch (err) {
+                statusDiv.innerHTML = `<div class="status error">❌ Wake Lock failed: ${err.message}</div>`;
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLock) {
+                await wakeLock.release();
+                wakeLock = null;
+            }
+        }
+
+        // Auto-check support on load
+        setTimeout(checkSupport, 500);
+    </script>
+</body>
+</html>

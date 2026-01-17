@@ -10,8 +10,11 @@ import { Input } from '../Shared/Input';
 import { Card, CardHeader, CardBody } from '../Shared/Card';
 import { EmptyState } from '../Shared/EmptyState';
 import { formatPrice, CATEGORIES } from '../../utils/validation';
+import { useHaptics } from '../../hooks/useHaptics';
 
 export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) => {
+  const { successPulse, errorPulse } = useHaptics();
+  
   const [newItem, setNewItem] = useState({ 
     name: '', 
     price: '', 
@@ -39,6 +42,7 @@ export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) =>
     const result = onAdd(newItem);
     
     if (result.success) {
+      successPulse(); // Haptic feedback on success
       setNewItem({ 
         name: '', 
         price: '', 
@@ -53,6 +57,7 @@ export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) =>
       setHighlightedId(result.item.id);
       setTimeout(() => setHighlightedId(null), 2000);
     } else {
+      errorPulse(); // Haptic feedback on error
       setErrors(prev => ({
         ...prev,
         [result.error.includes('name') ? 'name' : result.error.includes('price') ? 'price' : result.error.includes('description') ? 'description' : 'category']: result.error,
@@ -84,6 +89,7 @@ export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) =>
     const result = onUpdate(editingId, editData);
     
     if (result.success) {
+      successPulse(); // Haptic feedback on success
       setEditingId(null);
       setEditData({ name: '', price: '', description: '', category: 'Main Course', isVeg: true, isAvailable: true });
       setErrors({ name: '', price: '', description: '', category: '' });
@@ -93,6 +99,7 @@ export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) =>
       setHighlightedId(editingId);
       setTimeout(() => setHighlightedId(null), 2000);
     } else {
+      errorPulse(); // Haptic feedback on error
       setErrors(prev => ({
         ...prev,
         [result.error.includes('name') ? 'name' : result.error.includes('price') ? 'price' : result.error.includes('description') ? 'description' : 'category']: result.error,

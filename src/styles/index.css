@@ -39,6 +39,16 @@ body {
   background: linear-gradient(180deg, #0284c7, #0369a1);
 }
 
+/* Hide scrollbar for horizontal scroll (category tabs) */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Number Input - Remove Arrows */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {

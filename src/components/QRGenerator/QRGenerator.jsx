@@ -3,11 +3,14 @@
  * Generates and displays QR code for menu
  */
 
-import { QrCode, Download, RefreshCw, Sparkles, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { QrCode, Download, RefreshCw, Sparkles, Info, Share2, Copy, Shield } from 'lucide-react';
 import { Card, CardHeader, CardBody, CardFooter } from '../Shared/Card';
 import { Button } from '../Shared/Button';
 import { EmptyState } from '../Shared/EmptyState';
 import { Alert } from '../Shared/Alert';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { useWebShare } from '../../hooks/useWebShare';
 
 export const QRGenerator = ({ 
   menuItems, 
@@ -19,6 +22,54 @@ export const QRGenerator = ({
   onDownload,
   onToast
 }) => {
+  const { isSupported: wakeLockSupported, isActive: wakeLockActive, requestWakeLock, releaseWakeLock } = useWakeLock();
+  const { isSupported: shareSupported, shareMenuUrl, copyToClipboard } = useWebShare();
+  const [menuUrl, setMenuUrl] = useState('');
+  
+  // Extract menu URL from QR code when it's generated
+  useEffect(() => {
+    if (qrCodeUrl && menuItems.length > 0) {
+      // Generate the menu URL (same logic as qrService)
+      const compactData = menuItems.map(item => ({
+        n: item.name,
+        p: item.price,
+        d: item.description || '',
+        c: item.category || 'Other',
+        v: item.isVeg !== undefined ? item.isVeg : true,
+        a: item.isAvailable !== undefined ? item.isAvailable : true,
+      }));
+
+      const payload = {
+        i: compactData,
+        s: stallData.stallName || '',
+        w: stallData.waitTime || '',
+      };
+
+      const jsonString = JSON.stringify(payload);
+      const encodedJSON = encodeURIComponent(jsonString);
+      const base64Data = btoa(encodedJSON);
+      const productionURL = 'https://mad-eosin.vercel.app';
+      const url = `${productionURL}/#/view?m=${base64Data}`;
+      
+      setMenuUrl(url);
+    }
+  }, [qrCodeUrl, menuItems, stallData]);
+  
+  // Request wake lock when QR code is displayed
+  useEffect(() => {
+    if (qrCodeUrl && !isGenerating && wakeLockSupported) {
+      requestWakeLock();
+      onToast?.('🔒 Screen will stay on while QR is displayed', 'info');
+    }
+    
+    // Release wake lock when component unmounts or QR is cleared
+    return () => {
+      if (wakeLockActive) {
+        releaseWakeLock();
+      }
+    };
+  }, [qrCodeUrl, isGenerating, wakeLockSupported]);
+  
   // QR generation is now handled by EditorPage useEffect
   
   const handleRegenerate = () => {
@@ -29,6 +80,43 @@ export const QRGenerator = ({
   const handleDownload = () => {
     onDownload();
     onToast?.('QR code downloaded successfully! 🎉', 'success');
+  };
+  
+  const handleShare = async () => {
+    if (!menuUrl) {
+      onToast?.('No menu URL to share', 'error');
+      return;
+    }
+
+    const result = await shareMenuUrl(menuUrl, stallData.stallName);
+    
+    if (result.success) {
+      onToast?.('Menu shared successfully! 🎉', 'success');
+    } else if (result.error === 'cancelled') {
+      // User cancelled - don't show error
+      return;
+    } else {
+      onToast?.('Share failed, URL copied to clipboard instead', 'info');
+      // Fallback to copy
+      const copyResult = await copyToClipboard(menuUrl);
+      if (copyResult.success) {
+        onToast?.('URL copied to clipboard! 📋', 'success');
+      }
+    }
+  };
+  
+  const handleCopyLink = async () => {
+    if (!menuUrl) {
+      onToast?.('No menu URL to copy', 'error');
+      return;
+    }
+    
+    const result = await copyToClipboard(menuUrl);
+    if (result.success) {
+      onToast?.('URL copied to clipboard! 📋', 'success');
+    } else {
+      onToast?.('Failed to copy URL', 'error');
+    }
   };
 
   return (
@@ -122,17 +210,48 @@ export const QRGenerator = ({
       </CardBody>
       
       {qrCodeUrl && !isGenerating && (
-        <CardFooter className="bg-gradient-to-r from-green-50 to-emerald-50">
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleDownload}
-            disabled={!qrCodeUrl}
-            className="w-full font-bold shadow-lg hover:shadow-xl hover:scale-105"
-          >
-            <Download size={20} className="mr-2" />
-            Download QR Code
-          </Button>
+        <CardFooter className="bg-gradient-to-r from-green-50 to-emerald-50 space-y-3">
+          {wakeLockActive && (
+            <div className="flex items-center justify-center gap-2 text-sm text-green-700 font-semibold bg-green-100 px-4 py-2 rounded-xl">
+              <Shield size={16} />
+              <span>Screen locked on - won't dim</span>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-2 gap-3 w-full">
+            {shareSupported ? (
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleShare}
+                className="font-bold shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <Share2 size={20} className="mr-2" />
+                Share Menu
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleCopyLink}
+                className="font-bold shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <Copy size={20} className="mr-2" />
+                Copy Link
+              </Button>
+            )}
+            
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleDownload}
+              disabled={!qrCodeUrl}
+              className="font-bold shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              <Download size={20} className="mr-2" />
+              Download QR
+            </Button>
+          </div>
         </CardFooter>
       )}
     </Card>
