@@ -3,6 +3,7 @@
  * Main page for vendor menu management
  */
 
+import { useState, useEffect } from 'react';
 import { Menu, Wifi, WifiOff } from 'lucide-react';
 import { useMenu } from '../hooks/useMenu';
 import { useQRCode } from '../hooks/useQRCode';
@@ -14,6 +15,8 @@ import { ToastContainer } from '../components/Shared/Toast';
 import { Alert } from '../components/Shared/Alert';
 
 export const EditorPage = () => {
+  const [isOfflineReady, setIsOfflineReady] = useState(false);
+
   const {
     menuItems,
     isLoading,
@@ -32,6 +35,41 @@ export const EditorPage = () => {
   } = useQRCode();
 
   const { toasts, removeToast, success, error } = useToast();
+
+  // Check if service worker is active
+  useEffect(() => {
+    const checkServiceWorker = () => {
+      if ('serviceWorker' in navigator) {
+        // Check if service worker is controlling the page
+        if (navigator.serviceWorker.controller) {
+          console.log('✅ Service Worker is active and controlling the page');
+          setIsOfflineReady(true);
+        } else {
+          console.log('⏳ Service Worker not active yet');
+          setIsOfflineReady(false);
+        }
+      } else {
+        console.log('❌ Service Worker not supported');
+        setIsOfflineReady(false);
+      }
+    };
+
+    checkServiceWorker();
+
+    // Listen for service worker updates
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(() => {
+        console.log('✅ Service Worker is ready');
+        setIsOfflineReady(true);
+      });
+
+      // Listen for controllerchange event (when SW becomes active)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('🔄 Service Worker controller changed');
+        setIsOfflineReady(true);
+      });
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -63,11 +101,19 @@ export const EditorPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl shadow-md">
-                <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div>
-                <WifiOff size={16} />
-                Offline Ready
-              </div>
+              {isOfflineReady ? (
+                <div className="hidden sm:flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl shadow-md">
+                  <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div>
+                  <WifiOff size={16} />
+                  Offline Ready
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-gray-400 to-gray-500 text-white px-5 py-2.5 rounded-xl shadow-md">
+                  <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+                  <Wifi size={16} />
+                  Loading...
+                </div>
+              )}
             </div>
           </div>
         </div>
