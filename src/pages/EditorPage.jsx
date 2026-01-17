@@ -9,13 +9,16 @@ import { useMenu } from '../hooks/useMenu';
 import { useQRCode } from '../hooks/useQRCode';
 import { useToast } from '../hooks/useToast';
 import { MenuEditor } from '../components/MenuEditor/MenuEditor';
+import { StallSettings } from '../components/MenuEditor/StallSettings';
 import { MenuPreview } from '../components/MenuPreview/MenuPreview';
 import { QRGenerator } from '../components/QRGenerator/QRGenerator';
 import { ToastContainer } from '../components/Shared/Toast';
 import { Alert } from '../components/Shared/Alert';
+import storageService from '../services/storageService';
 
 export const EditorPage = () => {
   const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const [stallData, setStallData] = useState({ stallName: '', waitTime: '' });
 
   const {
     menuItems,
@@ -35,6 +38,16 @@ export const EditorPage = () => {
   } = useQRCode();
 
   const { toasts, removeToast, success, error } = useToast();
+
+  // Load stall data on mount
+  useEffect(() => {
+    const saved = storageService.loadStallData();
+    setStallData(saved);
+  }, []);
+
+  const handleStallSave = (data) => {
+    setStallData(data);
+  };
 
   // Check if service worker is active
   useEffect(() => {
@@ -131,8 +144,9 @@ export const EditorPage = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Column 1: Menu Editor */}
-          <div className="lg:col-span-1">
+          {/* Column 1: Menu Editor + Stall Settings */}
+          <div className="lg:col-span-1 space-y-6">
+            <StallSettings onSave={handleStallSave} onToast={success} />
             <MenuEditor
               menuItems={menuItems}
               onAdd={addItem}
@@ -144,13 +158,14 @@ export const EditorPage = () => {
 
           {/* Column 2: Live Preview */}
           <div className="lg:col-span-1">
-            <MenuPreview menuItems={menuItems} />
+            <MenuPreview menuItems={menuItems} stallData={stallData} />
           </div>
 
           {/* Column 3: QR Code */}
           <div className="lg:col-span-1">
             <QRGenerator
               menuItems={menuItems}
+              stallData={stallData}
               qrCodeUrl={qrCodeUrl}
               isGenerating={isGenerating}
               error={qrError}

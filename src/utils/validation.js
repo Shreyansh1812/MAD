@@ -5,10 +5,23 @@
 
 const VALIDATION_RULES = {
   ITEM_NAME_MAX_LENGTH: 50,
+  DESCRIPTION_MAX_LENGTH: 100,
   PRICE_MIN: 0,
   PRICE_MAX: 999999.99,
   PRICE_DECIMALS: 2,
+  STALL_NAME_MAX_LENGTH: 50,
+  WAIT_TIME_MAX_LENGTH: 20,
 };
+
+export const CATEGORIES = [
+  'Breakfast',
+  'Main Course',
+  'Appetizers',
+  'Drinks',
+  'Desserts',
+  'Snacks',
+  'Other',
+];
 
 /**
  * Validate menu item name
@@ -80,14 +93,112 @@ export const validatePrice = (price) => {
 export const validateMenuItem = (item) => {
   const nameValidation = validateItemName(item.name);
   const priceValidation = validatePrice(item.price);
+  const descriptionValidation = validateDescription(item.description || '');
+  const categoryValidation = validateCategory(item.category || 'Other');
 
   return {
-    valid: nameValidation.valid && priceValidation.valid,
+    valid: nameValidation.valid && priceValidation.valid && descriptionValidation.valid && categoryValidation.valid,
     errors: {
       name: nameValidation.error,
       price: priceValidation.error,
+      description: descriptionValidation.error,
+      category: categoryValidation.error,
     },
   };
+};
+
+/**
+ * Validate menu item description
+ * @param {string} description - Item description to validate
+ * @returns {Object} Validation result { valid: boolean, error: string }
+ */
+export const validateDescription = (description) => {
+  if (!description) {
+    return { valid: true, error: null }; // Optional field
+  }
+
+  if (typeof description !== 'string') {
+    return { valid: false, error: 'Description must be a string' };
+  }
+
+  if (description.length > VALIDATION_RULES.DESCRIPTION_MAX_LENGTH) {
+    return { 
+      valid: false, 
+      error: `Description must not exceed ${VALIDATION_RULES.DESCRIPTION_MAX_LENGTH} characters` 
+    };
+  }
+
+  return { valid: true, error: null };
+};
+
+/**
+ * Validate menu item category
+ * @param {string} category - Category to validate
+ * @returns {Object} Validation result { valid: boolean, error: string }
+ */
+export const validateCategory = (category) => {
+  if (!category) {
+    return { valid: true, error: null }; // Will default to 'Other'
+  }
+
+  if (!CATEGORIES.includes(category)) {
+    return { 
+      valid: false, 
+      error: `Category must be one of: ${CATEGORIES.join(', ')}` 
+    };
+  }
+
+  return { valid: true, error: null };
+};
+
+/**
+ * Validate stall name
+ * @param {string} stallName - Stall name to validate
+ * @returns {Object} Validation result { valid: boolean, error: string }
+ */
+export const validateStallName = (stallName) => {
+  if (!stallName || typeof stallName !== 'string') {
+    return { valid: false, error: 'Stall name is required' };
+  }
+
+  const trimmed = stallName.trim();
+  
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'Stall name cannot be empty' };
+  }
+
+  if (trimmed.length > VALIDATION_RULES.STALL_NAME_MAX_LENGTH) {
+    return { 
+      valid: false, 
+      error: `Stall name must not exceed ${VALIDATION_RULES.STALL_NAME_MAX_LENGTH} characters` 
+    };
+  }
+
+  return { valid: true, error: null };
+};
+
+/**
+ * Validate wait time
+ * @param {string} waitTime - Wait time to validate
+ * @returns {Object} Validation result { valid: boolean, error: string }
+ */
+export const validateWaitTime = (waitTime) => {
+  if (!waitTime) {
+    return { valid: true, error: null }; // Optional field
+  }
+
+  if (typeof waitTime !== 'string') {
+    return { valid: false, error: 'Wait time must be a string' };
+  }
+
+  if (waitTime.length > VALIDATION_RULES.WAIT_TIME_MAX_LENGTH) {
+    return { 
+      valid: false, 
+      error: `Wait time must not exceed ${VALIDATION_RULES.WAIT_TIME_MAX_LENGTH} characters` 
+    };
+  }
+
+  return { valid: true, error: null };
 };
 
 /**

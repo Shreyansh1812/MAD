@@ -18,9 +18,10 @@ export const useQRCode = () => {
   /**
    * Generate QR code for menu
    * @param {Array} menuItems - Menu items to encode
+   * @param {Object} stallData - Stall metadata
    * @param {Object} options - QR generation options
    */
-  const generateQR = useCallback(async (menuItems, options = {}) => {
+  const generateQR = useCallback(async (menuItems, stallData = {}, options = {}) => {
     if (!menuItems || menuItems.length === 0) {
       setError('No menu items to generate QR code');
       setQrCodeUrl(null);
@@ -32,7 +33,7 @@ export const useQRCode = () => {
     setQrCodeUrl(null); // Clear existing QR code first
 
     try {
-      const dataUrl = await qrService.generateMenuQR(menuItems, options);
+      const dataUrl = await qrService.generateMenuQR(menuItems, stallData, options);
       setQrCodeUrl(dataUrl);
     } catch (err) {
       setError('Failed to generate QR code');

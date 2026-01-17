@@ -61,6 +61,10 @@ export const useMenu = () => {
       id: generateId(),
       name: item.name.trim(),
       price: parseFloat(item.price),
+      description: item.description ? item.description.trim() : '',
+      category: item.category || 'Other',
+      isVeg: item.isVeg !== undefined ? item.isVeg : true,
+      isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
       createdAt: new Date().toISOString(),
     };
 
@@ -95,7 +99,7 @@ export const useMenu = () => {
     if (!validation.valid) {
       return {
         success: false,
-        error: validation.errors.name || validation.errors.price,
+        error: validation.errors.name || validation.errors.price || validation.errors.description || validation.errors.category,
       };
     }
 
@@ -106,6 +110,10 @@ export const useMenu = () => {
               ...i,
               name: updates.name !== undefined ? updates.name.trim() : i.name,
               price: updates.price !== undefined ? parseFloat(updates.price) : i.price,
+              description: updates.description !== undefined ? updates.description.trim() : i.description,
+              category: updates.category !== undefined ? updates.category : i.category,
+              isVeg: updates.isVeg !== undefined ? updates.isVeg : i.isVeg,
+              isAvailable: updates.isAvailable !== undefined ? updates.isAvailable : i.isAvailable,
               updatedAt: new Date().toISOString(),
             }
           : i

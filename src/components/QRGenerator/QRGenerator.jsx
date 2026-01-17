@@ -12,6 +12,7 @@ import { Alert } from '../Shared/Alert';
 
 export const QRGenerator = ({ 
   menuItems, 
+  stallData,
   qrCodeUrl, 
   isGenerating, 
   error, 
@@ -19,16 +20,16 @@ export const QRGenerator = ({
   onDownload,
   onToast
 }) => {
-  // Auto-generate QR when menu changes
+  // Auto-generate QR when menu or stall data changes
   useEffect(() => {
     if (menuItems.length > 0) {
-      onGenerate(menuItems);
+      onGenerate(menuItems, stallData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuItems.length]); // Only trigger when menu items count changes
+  }, [menuItems.length, stallData?.stallName, stallData?.waitTime]); // Trigger when menu items count or stall data changes
 
   const handleRegenerate = () => {
-    onGenerate(menuItems);
+    onGenerate(menuItems, stallData);
     onToast?.('QR code regenerated successfully! ✨', 'success');
   };
 

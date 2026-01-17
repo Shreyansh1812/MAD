@@ -5,7 +5,8 @@
  */
 
 const STORAGE_KEY = 'quickmenu_data';
-const STORAGE_VERSION = '1.0';
+const STALL_KEY = 'quickmenu_stall';
+const STORAGE_VERSION = '2.0';
 
 /**
  * Storage adapter interface for LocalStorage
@@ -121,6 +122,47 @@ class StorageService {
       dataSize: stored ? new Blob([stored]).size : 0,
       timestamp: stored ? JSON.parse(stored).timestamp : null,
     };
+  }
+
+  /**
+   * Save stall metadata
+   * @param {Object} stallData - { stallName, waitTime }
+   * @returns {boolean} Success status
+   */
+  saveStallData(stallData) {
+    if (!this.isAvailable) {
+      return false;
+    }
+
+    try {
+      localStorage.setItem(STALL_KEY, JSON.stringify(stallData));
+      return true;
+    } catch (e) {
+      console.error('Failed to save stall data:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Load stall metadata
+   * @returns {Object} Stall data { stallName, waitTime }
+   */
+  loadStallData() {
+    if (!this.isAvailable) {
+      return { stallName: '', waitTime: '' };
+    }
+
+    try {
+      const stored = localStorage.getItem(STALL_KEY);
+      if (!stored) {
+        return { stallName: '', waitTime: '' };
+      }
+
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error('Failed to load stall data:', e);
+      return { stallName: '', waitTime: '' };
+    }
   }
 }
 

@@ -8,7 +8,9 @@ import { Card, CardHeader, CardBody } from '../Shared/Card';
 import { EmptyState } from '../Shared/EmptyState';
 import { formatPrice } from '../../utils/validation';
 
-export const MenuPreview = ({ menuItems, vendorName = 'Quick Menu' }) => {
+export const MenuPreview = ({ menuItems, stallData }) => {
+  const stallName = stallData?.stallName || 'Quick Menu';
+  
   return (
     <Card className="h-full shadow-xl">
       <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b-2 border-purple-100">
@@ -34,7 +36,7 @@ export const MenuPreview = ({ menuItems, vendorName = 'Quick Menu' }) => {
             <div className="flex items-center justify-center gap-3 mb-2">
               <UtensilsCrossed size={32} strokeWidth={2.5} />
             </div>
-            <h3 className="text-3xl font-black text-center">{vendorName}</h3>
+            <h3 className="text-3xl font-black text-center">{stallName}</h3>
             <p className="text-center text-primary-100 mt-1 font-medium">Digital Menu</p>
           </div>
 

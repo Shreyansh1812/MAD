@@ -10,6 +10,7 @@ import { MenuViewPage } from './pages/MenuViewPage';
 function App() {
   const [isViewMode, setIsViewMode] = useState(false);
   const [sharedMenu, setSharedMenu] = useState(null);
+  const [stallData, setStallData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [parseError, setParseError] = useState(null);
 
@@ -65,19 +66,29 @@ function App() {
         const jsonString = decodeURIComponent(encodedJSON);
         
         console.log('📦 Parsing JSON...');
-        const compactData = JSON.parse(jsonString);
+        const payload = JSON.parse(jsonString);
+        
+        // Handle both old format (array) and new format (object with 'i' property)
+        const compactData = Array.isArray(payload) ? payload : payload.i || [];
+        const stall = !Array.isArray(payload) ? { stallName: payload.s || '', waitTime: payload.w || '' } : null;
         
         console.log('✅ Parsed menu items count:', compactData.length);
+        console.log('✅ Stall data:', stall);
 
         // Transform compact data to full menu item format
         const menuItems = compactData.map((item, index) => ({
           id: `qr-${index}`,
           name: item.n,
           price: item.p,
+          description: item.d || '',
+          category: item.c || 'Other',
+          isVeg: item.v !== undefined ? item.v : true,
+          isAvailable: item.a !== undefined ? item.a : true,
         }));
 
         console.log('✨ Menu items ready:', menuItems);
         setSharedMenu(menuItems);
+        setStallData(stall);
         setIsViewMode(true);
         setIsLoading(false);
         
@@ -140,7 +151,7 @@ function App() {
     );
   }
 
-  return isViewMode ? <MenuViewPage menuData={sharedMenu} /> : <EditorPage />;
+  return isViewMode ? <MenuViewPage menuData={sharedMenu} stallData={stallData} /> : <EditorPage />;
 }
 
 export default App;

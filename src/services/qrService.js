@@ -47,19 +47,31 @@ class QRService {
    * Generate QR code for menu data
    * Creates a data URI containing the entire menu
    * @param {Array} menuItems - Array of menu items
+   * @param {Object} stallData - { stallName, waitTime }
    * @param {Object} options - QR generation options
    * @returns {Promise<string>} Data URL of QR code
    */
-  async generateMenuQR(menuItems, options = {}) {
+  async generateMenuQR(menuItems, stallData = {}, options = {}) {
     try {
-      // Create a compact menu data structure
+      // Create a compact menu data structure using 1-letter keys
       const compactData = menuItems.map(item => ({
-        n: item.name,
-        p: item.price,
+        n: item.name,           // name
+        p: item.price,          // price
+        d: item.description || '',  // description
+        c: item.category || 'Other', // category
+        v: item.isVeg !== undefined ? item.isVeg : true,  // isVeg
+        a: item.isAvailable !== undefined ? item.isAvailable : true, // isAvailable
       }));
 
+      // Create compact stall data
+      const payload = {
+        i: compactData,  // items
+        s: stallData.stallName || '',  // stall name
+        w: stallData.waitTime || '',   // wait time
+      };
+
       // Convert to JSON and handle Unicode characters
-      const jsonString = JSON.stringify(compactData);
+      const jsonString = JSON.stringify(payload);
       
       // Encode URI component first to handle special characters (₹, etc.)
       const encodedJSON = encodeURIComponent(jsonString);
