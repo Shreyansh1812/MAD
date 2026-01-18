@@ -1,18 +1,67 @@
 /**
  * Main Application Component
  * Routes between editor and view modes
+ * Implements Firebase authentication and protected routing
  */
 
 import { useEffect, useState } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from './lib/firebase';
 import { EditorPage } from './pages/EditorPage';
 import { MenuViewPage } from './pages/MenuViewPage';
+import { LoginScreen } from './components/Auth/LoginScreen';
+import { RegisterScreen } from './components/Auth/RegisterScreen';
+import { LogOut } from 'lucide-react';
 
 function App() {
+  // Authentication state
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showRegister, setShowRegister] = useState(false);
+  
+  // Menu view state
   const [isViewMode, setIsViewMode] = useState(false);
   const [sharedMenu, setSharedMenu] = useState(null);
   const [stallData, setStallData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [parseError, setParseError] = useState(null);
+
+  // Firebase Auth State Listener
+  useEffect(() => {
+    console.log('🔐 Setting up Firebase auth listener...');
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('✅ User authenticated:', user.email);
+        setCurrentUser(user);
+      } else {
+        console.log('❌ No user authenticated');
+        setCurrentUser(null);
+      }
+      setAuthLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  // Update Android Status Bar Color & Launch Haptic Feedback
+  useEffect(() => {
+    // Update status bar color to match brand
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', '#0ea5e9');
+      console.log('✅ Status bar color updated to #0ea5e9');
+    }
+
+    // One-time tactile confirmation when launched from home screen (standalone mode)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      if (navigator.vibrate) {
+        navigator.vibrate(15);
+        console.log('📱 Launch haptic feedback triggered');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Check if URL contains menu data (view mode)
@@ -117,15 +166,39 @@ function App() {
     };
   }, []);
 
-  // Show loading screen
-  if (isLoading) {
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      console.log('✅ User signed out');
+      
+      // Haptic feedback - success (30ms)
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+      
+      setCurrentUser(null);
+      setShowRegister(false);
+    } catch (error) {
+      console.error('❌ Logout failed:', error);
+    }
+  };
+
+  // Handle successful login/register
+  const handleAuthSuccess = (user) => {
+    console.log('✅ Auth success:', user.email);
+    setCurrentUser(user);
+  };
+
+  // Show splash screen while checking auth state
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500">
         <div className="text-center">
           <div className="relative mb-6">
             <div className="animate-spin rounded-full h-20 w-20 border-4 border-white/30 border-t-white mx-auto"></div>
           </div>
-          <p className="text-xl text-white font-bold">Loading...</p>
+          <p className="text-xl text-white font-bold">Loading QuickMenu...</p>
         </div>
       </div>
     );
@@ -151,7 +224,48 @@ function App() {
     );
   }
 
-  return isViewMode ? <MenuViewPage menuData={sharedMenu} stallData={stallData} /> : <EditorPage />;
+  // PUBLIC ACCESS: MenuViewPage is always accessible (bypass auth)
+  if (isViewMode) {
+    return <MenuViewPage menuData={sharedMenu} stallData={stallData} />;
+  }
+
+  // PROTECTED ROUTING: Require authentication for vendor dashboard
+  if (!currentUser) {
+    // Show Login or Register screen
+    if (showRegister) {
+      return (
+        <RegisterScreen
+          onSwitchToLogin={() => setShowRegister(false)}
+          onRegisterSuccess={handleAuthSuccess}
+        />
+      );
+    }
+    
+    return (
+      <LoginScreen
+        onSwitchToRegister={() => setShowRegister(true)}
+        onLoginSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // AUTHENTICATED: Show vendor dashboard with logout button
+  return (
+    <div className="relative">
+      {/* Logout Button - Fixed in top-right corner */}
+      <button
+        onClick={handleLogout}
+        className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-white text-gray-700 px-4 py-2 rounded-lg shadow-lg hover:bg-gray-50 active:scale-95 transition-all border border-gray-200"
+        title="Sign Out"
+      >
+        <LogOut className="w-4 h-4" />
+        <span className="hidden sm:inline font-medium">Logout</span>
+      </button>
+
+      {/* Vendor Dashboard */}
+      <EditorPage user={currentUser} onLogout={handleLogout} />
+    </div>
+  );
 }
 
 export default App;

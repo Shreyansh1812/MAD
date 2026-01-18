@@ -9,23 +9,34 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'QuickMenu',
+        name: 'QuickMenu - Offline Vendor Portal',
         short_name: 'QuickMenu',
         description: 'Offline-first QR menu generator for vendors',
-        theme_color: '#0ea5e9',
-        background_color: '#0ea5e9',
+        theme_color: '#0ea5e9', // Primary brand color (Sky Blue)
+        background_color: '#0ea5e9', // Splash screen background
         display: 'standalone',
         orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
+        categories: ['business', 'food', 'utilities'],
         icons: [
           {
-            src: '/vite.svg',
+            src: '/icon-192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: '/vite.svg',
+            src: '/icon-512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable', // Android adaptive icon for splash screen
           },
         ],
       },
