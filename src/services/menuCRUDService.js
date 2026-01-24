@@ -142,6 +142,10 @@ export const addMenuItem = async (menuItem, userId = null) => {
       id: menuItem.id || `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: menuItem.name.trim(),
       price: menuItem.price,
+      description: menuItem.description || '',
+      category: menuItem.category || 'Other',
+      isVeg: menuItem.isVeg !== undefined ? menuItem.isVeg : true,
+      isAvailable: menuItem.isAvailable !== undefined ? menuItem.isAvailable : true,
       addedAt: new Date().toISOString()
     };
 
