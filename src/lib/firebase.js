@@ -24,5 +24,8 @@ const analytics = getAnalytics(app);
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
 
+// Export app for other services
+export { app };
+
 // Initialize Google Auth Provider for native-style Google Sign-In
 export const googleProvider = new GoogleAuthProvider();

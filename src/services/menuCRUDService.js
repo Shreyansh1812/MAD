@@ -13,10 +13,10 @@ import {
   arrayUnion, 
   arrayRemove 
 } from 'firebase/firestore';
-import { auth } from '../lib/firebase';
+import { auth, app } from '../lib/firebase';
 
 // Initialize Firestore database instance
-const db = getFirestore();
+const db = getFirestore(app);
 
 /**
  * Get the current authenticated user's ID
