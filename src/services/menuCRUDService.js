@@ -5,7 +5,6 @@
  */
 
 import { 
-  getFirestore, 
   doc, 
   setDoc, 
   getDoc, 
@@ -13,10 +12,7 @@ import {
   arrayUnion, 
   arrayRemove 
 } from 'firebase/firestore';
-import { auth, app } from '../lib/firebase';
-
-// Initialize Firestore database instance
-const db = getFirestore(app);
+import { auth, db } from '../lib/firebase';
 
 /**
  * Get the current authenticated user's ID
