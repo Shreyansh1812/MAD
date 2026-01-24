@@ -36,33 +36,40 @@ export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) =>
   const [highlightedId, setHighlightedId] = useState(null);
 
   /**
-   * Handle adding new item
+   * Handle adding new item (Firebase async version)
    */
-  const handleAdd = () => {
-    const result = onAdd(newItem);
-    
-    if (result.success) {
-      successPulse(); // Haptic feedback on success
-      setNewItem({ 
-        name: '', 
-        price: '', 
-        description: '', 
-        category: 'Main Course',
-        isVeg: true,
-        isAvailable: true
-      });
-      onToast?.(`✨ ${result.item.name} added to menu!`, 'success');
+  const handleAdd = async () => {
+    try {
+      const result = await onAdd(newItem);
       
-      // Highlight new item
-      setHighlightedId(result.item.id);
-      setTimeout(() => setHighlightedId(null), 2000);
-    } else {
-      errorPulse(); // Haptic feedback on error
-      setErrors(prev => ({
-        ...prev,
-        [result.error.includes('name') ? 'name' : result.error.includes('price') ? 'price' : result.error.includes('description') ? 'description' : 'category']: result.error,
-      }));
-      onToast?.(result.error, 'error');
+      if (result.success) {
+        successPulse(); // Haptic feedback on success
+        setNewItem({ 
+          name: '', 
+          price: '', 
+          description: '', 
+          category: 'Main Course',
+          isVeg: true,
+          isAvailable: true
+        });
+        onToast?.(`✨ ${result.item.name} added to menu!`, 'success');
+        
+        // Highlight new item
+        setHighlightedId(result.item.id);
+        setTimeout(() => setHighlightedId(null), 2000);
+      } else {
+        errorPulse(); // Haptic feedback on error
+        const errorMsg = result.error || 'Failed to add item';
+        setErrors(prev => ({
+          ...prev,
+          [errorMsg.includes('name') ? 'name' : errorMsg.includes('price') ? 'price' : errorMsg.includes('description') ? 'description' : 'category']: errorMsg,
+        }));
+        onToast?.(errorMsg, 'error');
+      }
+    } catch (error) {
+      errorPulse();
+      console.error('Error adding item:', error);
+      onToast?.('Failed to add item: ' + error.message, 'error');
     }
   };
 
@@ -83,28 +90,35 @@ export const MenuEditor = ({ menuItems, onAdd, onUpdate, onDelete, onToast }) =>
   };
 
   /**
-   * Handle saving edit
+   * Handle saving edit (Firebase async version)
    */
-  const saveEdit = () => {
-    const result = onUpdate(editingId, editData);
-    
-    if (result.success) {
-      successPulse(); // Haptic feedback on success
-      setEditingId(null);
-      setEditData({ name: '', price: '', description: '', category: 'Main Course', isVeg: true, isAvailable: true });
-      setErrors({ name: '', price: '', description: '', category: '' });
-      onToast?.('Item updated successfully!', 'success');
+  const saveEdit = async () => {
+    try {
+      const result = await onUpdate(editingId, editData);
       
-      // Highlight updated item
-      setHighlightedId(editingId);
-      setTimeout(() => setHighlightedId(null), 2000);
-    } else {
-      errorPulse(); // Haptic feedback on error
-      setErrors(prev => ({
-        ...prev,
-        [result.error.includes('name') ? 'name' : result.error.includes('price') ? 'price' : result.error.includes('description') ? 'description' : 'category']: result.error,
-      }));
-      onToast?.(result.error, 'error');
+      if (result.success) {
+        successPulse(); // Haptic feedback on success
+        setEditingId(null);
+        setEditData({ name: '', price: '', description: '', category: 'Main Course', isVeg: true, isAvailable: true });
+        setErrors({ name: '', price: '', description: '', category: '' });
+        onToast?.('Item updated successfully!', 'success');
+        
+        // Highlight updated item
+        setHighlightedId(editingId);
+        setTimeout(() => setHighlightedId(null), 2000);
+      } else {
+        errorPulse(); // Haptic feedback on error
+        const errorMsg = result.error || 'Failed to update item';
+        setErrors(prev => ({
+          ...prev,
+          [errorMsg.includes('name') ? 'name' : errorMsg.includes('price') ? 'price' : errorMsg.includes('description') ? 'description' : 'category']: errorMsg,
+        }));
+        onToast?.(errorMsg, 'error');
+      }
+    } catch (error) {
+      errorPulse();
+      console.error('Error updating item:', error);
+      onToast?.('Failed to update item: ' + error.message, 'error');
     }
   };
 
