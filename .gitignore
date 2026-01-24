@@ -28,3 +28,9 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Practical Documentation (Internal Use Only)
+PRACTICAL_06_GUIDE.md
+TESTING_GUIDE.md
+src/services/crudDemo.js
+firestore.rules
