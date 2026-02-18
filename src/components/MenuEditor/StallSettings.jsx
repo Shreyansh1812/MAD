@@ -135,11 +135,6 @@ export const StallSettings = ({ onSave, onToast }) => {
           {loading ? 'Saving to Firebase...' : 'Save Settings'}
         </Button>
 
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <p className="text-sm text-blue-800">
-            <strong>🔥 Firebase CRUD:</strong> These settings are saved using <code>setDoc()</code> with merge option. Data persists across devices!
-          </p>
-        </div>
         
         <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
           <p className="text-sm text-green-800">
