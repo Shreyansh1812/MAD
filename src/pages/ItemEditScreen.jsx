@@ -18,6 +18,7 @@ import { ArrowLeft, Save, Trash2, Leaf, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUserContext } from '../contexts/UserContext';
 import { useToast } from '../hooks/useToast';
+import { useNotifications } from '../hooks/useNotifications';
 import { useHaptics } from '../hooks/useHaptics';
 import { Button } from '../components/Shared/Button';
 import { Input } from '../components/Shared/Input';
@@ -40,6 +41,7 @@ export const ItemEditScreen = () => {
   // ============================================
   const { menuItems, updateItem, deleteItem } = useUserContext();
   const { toasts, removeToast, success, error } = useToast();
+  const { notifyMenuUpdated } = useNotifications();
   const { successPulse, errorPulse } = useHaptics();
 
   // ============================================
@@ -139,6 +141,9 @@ export const ItemEditScreen = () => {
       if (result.success) {
         successPulse();
         success(`✅ ${formData.name} updated!`, 'success');
+        
+        // Show notification
+        notifyMenuUpdated();
         
         // Navigate back after short delay
         setTimeout(() => {

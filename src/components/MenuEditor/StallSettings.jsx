@@ -10,8 +10,10 @@ import { Button } from '../Shared/Button';
 import { Input } from '../Shared/Input';
 import { Card, CardHeader, CardBody } from '../Shared/Card';
 import { saveSettings, getMenuData } from '../../services/menuCRUDService';
+import { useNotifications } from '../../hooks/useNotifications';
 
 export const StallSettings = ({ onSave, onToast }) => {
+  const { notifySettingsSaved } = useNotifications();
   const [stallName, setStallName] = useState('');
   const [waitTime, setWaitTime] = useState('');
   const [errors, setErrors] = useState({ stallName: '', waitTime: '' });
@@ -70,6 +72,9 @@ export const StallSettings = ({ onSave, onToast }) => {
       if (result.success) {
         onSave?.(stallData);
         onToast?.('✓ Stall settings saved to Firebase!', 'success');
+        
+        // Show notification
+        notifySettingsSaved(stallData.stallName);
       }
     } catch (error) {
       console.error('Error saving settings:', error);

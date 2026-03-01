@@ -196,6 +196,10 @@ export const useNotifications = () => {
     return notify(notificationService.templates.qrGenerated());
   }, [notify]);
 
+  const notifySettingsSaved = useCallback((stallName) => {
+    return notify(notificationService.templates.settingsSaved(stallName));
+  }, [notify]);
+
   const scheduleDailyReminder = useCallback((hour = 8, minute = 0) => {
     return scheduleDailyNotification(
       notificationService.templates.dailyReminder(),
@@ -242,6 +246,7 @@ export const useNotifications = () => {
     notifyItemAdded,
     notifyMenuUpdated,
     notifyQRGenerated,
+    notifySettingsSaved,
     scheduleDailyReminder,
     scheduleWeeklyReview,
   };

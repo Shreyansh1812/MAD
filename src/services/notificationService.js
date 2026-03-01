@@ -411,6 +411,14 @@ class NotificationService {
       action: '/dashboard/qr',
     }),
 
+    settingsSaved: (stallName) => ({
+      title: '⚙️ Settings Saved',
+      body: `Stall settings for "${stallName}" have been updated`,
+      icon: '/icon-192.png',
+      tag: `settings-saved-${Date.now()}`,
+      action: '/dashboard/editor',
+    }),
+
     dailyReminder: () => ({
       title: '🌅 Good Morning!',
       body: "Don't forget to update today's specials",

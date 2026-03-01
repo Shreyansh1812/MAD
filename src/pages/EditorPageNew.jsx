@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Edit3, Wifi, WifiOff } from 'lucide-react';
 import { useUserContext } from '../contexts/UserContext';
 import { useToast } from '../hooks/useToast';
+import { useNotifications } from '../hooks/useNotifications';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { MenuEditor } from '../components/MenuEditor/MenuEditor';
@@ -29,6 +30,9 @@ export const EditorPageNew = () => {
 
   // PWA Install Management
   const { canInstall, promptInstall, dismissPrompt, hasInstalled } = usePWAInstall();
+
+  // Notification system
+  const { notifyItemAdded } = useNotifications();
 
   // Global state from UserContext
   const {
@@ -98,6 +102,10 @@ export const EditorPageNew = () => {
     const result = await addItem(item);
     if (result.success) {
       success(`✨ ${result.item.name} added!`, 'success');
+      
+      // Show notification
+      notifyItemAdded(result.item.name);
+      
       // Option: Navigate to edit screen
       // navigate(`/dashboard/edit/${result.item.id}`);
     }
