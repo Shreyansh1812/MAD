@@ -10,9 +10,10 @@
  */
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Edit3, Eye, User, QrCode as QrCodeIcon, ChefHat } from 'lucide-react';
+import { Edit3, Eye, User, QrCode as QrCodeIcon, ChefHat, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useHaptics } from '../../hooks/useHaptics';
+import { NotificationBadge } from '../Shared/NotificationBadge';
 
 export const BottomNavigation = () => {
   const navigate = useNavigate();
@@ -48,6 +49,14 @@ export const BottomNavigation = () => {
       icon: QrCodeIcon,
       path: '/dashboard/qr',
       color: 'text-purple-500',
+    },
+    {
+      id: 'notifications',
+      label: 'Alerts',
+      icon: Bell,
+      path: '/dashboard/notifications',
+      color: 'text-red-500',
+      badge: true, // Show badge for unread count
     },
     {
       id: 'account',
@@ -105,6 +114,7 @@ export const BottomNavigation = () => {
                   stiffness: 400,
                   damping: 20,
                 }}
+                className="relative"
               >
                 <Icon
                   className={`w-6 h-6 transition-colors ${
@@ -112,6 +122,8 @@ export const BottomNavigation = () => {
                   }`}
                   strokeWidth={active ? 2.5 : 2}
                 />
+                {/* Notification Badge */}
+                {item.badge && <NotificationBadge />}
               </motion.div>
 
               {/* Label */}

@@ -160,14 +160,28 @@ export const RecipeBrowserPage = () => {
           </div>
 
           {/* Info Banner */}
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-lg mb-4">
-            <div className="flex items-start gap-2">
-              <Lightbulb size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-900">
-                <strong>Demo Feature:</strong> Browse popular recipes from external API to discover new menu item ideas!
-              </p>
+          {hasData && recipes.length > 0 && recipes[0].id?.startsWith('mock-') ? (
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg mb-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-900">
+                  <strong>Demo Mode:</strong> External API is unavailable. Showing sample recipe data for demonstration.
+                  <p className="mt-1 text-xs">
+                    All features work the same - ingredients, instructions, and navigation are displayed correctly.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-lg mb-4">
+              <div className="flex items-start gap-2">
+                <Lightbulb size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-900">
+                  <strong>Demo Feature:</strong> Browse popular recipes from external API to discover new menu item ideas!
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="mb-4">
@@ -235,7 +249,11 @@ export const RecipeBrowserPage = () => {
         {/* DATA - RECIPE CARDS */}
         {hasData && !isLoading && (
           <div className="space-y-4 animate-fade-in">
-            {recipes.map((recipe) => (
+            {recipes.map((recipe) => {
+              // Debug logging
+              console.log('🍽️ Rendering recipe:', recipe.name, 'Ingredients:', recipe.ingredients?.length, recipe.ingredients);
+              
+              return (
               <div
                 key={recipe.id}
                 className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-orange-300"
@@ -308,13 +326,19 @@ export const RecipeBrowserPage = () => {
                         <Leaf size={16} className="text-green-600" />
                         Ingredients:
                       </h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {recipe.ingredients?.slice(0, 8).map((ing, idx) => (
-                          <div key={idx} className="text-sm text-gray-700">
-                            • {ing.measure} {ing.name}
-                          </div>
-                        ))}
-                      </div>
+                      {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {recipe.ingredients.map((ing, idx) => (
+                            <div key={idx} className="text-sm text-gray-700">
+                              • {ing.measure} {ing.name}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic">
+                          No ingredients data available
+                        </p>
+                      )}
                     </div>
 
                     {/* Instructions Preview */}
@@ -341,7 +365,8 @@ export const RecipeBrowserPage = () => {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
 

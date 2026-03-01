@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getMessaging, isSupported as isMessagingSupported } from "firebase/messaging";
 
 // Sanitize environment variables to remove hidden characters
 const sanitizeEnvVar = (value) => {
@@ -53,6 +54,27 @@ console.log('✅ Firebase Auth initialized');
 // Initialize Firestore
 export const db = getFirestore(app);
 console.log('✅ Firestore initialized');
+
+// Initialize Firebase Cloud Messaging (FCM) for push notifications
+let messaging = null;
+
+// Check if messaging is supported and initialize
+isMessagingSupported()
+  .then((supported) => {
+    if (supported) {
+      messaging = getMessaging(app);
+      console.log('✅ Firebase Cloud Messaging initialized');
+      console.log('📱 Push notifications available');
+    } else {
+      console.warn('⚠️ Firebase Cloud Messaging not supported in this browser');
+    }
+  })
+  .catch((error) => {
+    console.warn('⚠️ FCM not available:', error.message);
+    console.log('ℹ️ Push notifications will not work (this is normal in some browsers/contexts)');
+  });
+
+export { messaging };
 
 // Export app for other services
 export { app };

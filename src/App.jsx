@@ -20,8 +20,10 @@ import { ItemEditScreen } from './pages/ItemEditScreen';
 import { DashboardLayout } from './pages/DashboardLayout';
 import { MenuViewPage } from './pages/MenuViewPage';
 import { RecipeBrowserPage } from './pages/RecipeBrowserPage';
+import { NotificationCenterPage } from './pages/NotificationCenterPage';
 import { LoginScreen } from './components/Auth/LoginScreen';
 import { RegisterScreen } from './components/Auth/RegisterScreen';
+import { NotificationPermissionBanner } from './components/Shared/NotificationPermissionBanner';
 
 /**
  * ProtectedRoute Component
@@ -92,6 +94,7 @@ const AppRoutes = () => {
         <Route path="preview" element={<PreviewPage />} />
         <Route path="qr" element={<QRPage />} />
         <Route path="recipes" element={<RecipeBrowserPage />} />
+        <Route path="notifications" element={<NotificationCenterPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="edit/:itemId" element={<ItemEditScreen />} />
       </Route>
@@ -237,6 +240,7 @@ function App() {
   return (
     <UserProvider>
       <BrowserRouter>
+        <NotificationPermissionBanner />
         <AppRoutes />
       </BrowserRouter>
     </UserProvider>
