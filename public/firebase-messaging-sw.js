@@ -21,14 +21,20 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
  * 
  * TEACHING POINT: Service workers need their own Firebase initialization
  * Cannot access the main app's Firebase instance
+ * 
+ * SECURITY NOTE: These credentials are from your .env file
+ * For production, consider:
+ * - Firebase App Check for additional security
+ * - API key restrictions in Google Cloud Console
+ * - Firestore security rules
  */
 firebase.initializeApp({
-  apiKey: "AIzaSyAUGJqkqEoZtQtzB1x2jG3Sk2cS_KgZTDY",
-  authDomain: "quickmenu-a3.firebaseapp.com",
-  projectId: "quickmenu-a3",
-  storageBucket: "quickmenu-a3.firebasestorage.app",
-  messagingSenderId: "267375062609",
-  appId: "1:267375062609:web:00e7d4e7c11da8c98a3e6b"
+  apiKey: "AIzaSyCVGpxtdFWpGMR6Goe99hXMn-XW6Ca0FHw",
+  authDomain: "quickmenu-mad.firebaseapp.com",
+  projectId: "quickmenu-mad",
+  storageBucket: "quickmenu-mad.firebasestorage.app",
+  messagingSenderId: "242106387505",
+  appId: "1:242106387505:web:4f215cf7c48b2dba695910"
 });
 
 // Get Firebase Messaging instance
