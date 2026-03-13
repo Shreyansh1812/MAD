@@ -10,7 +10,7 @@
  */
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Edit3, Eye, User, QrCode as QrCodeIcon, ChefHat, Bell } from 'lucide-react';
+import { Edit3, Eye, User, QrCode as QrCodeIcon, ChefHat, Bell, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useHaptics } from '../../hooks/useHaptics';
 import { NotificationBadge } from '../Shared/NotificationBadge';
@@ -42,6 +42,13 @@ export const BottomNavigation = () => {
       icon: ChefHat,
       path: '/dashboard/recipes',
       color: 'text-orange-500',
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      path: '/dashboard/analytics',
+      color: 'text-cyan-500',
     },
     {
       id: 'qr',

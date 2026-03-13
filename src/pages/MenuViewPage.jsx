@@ -4,15 +4,17 @@
  * Enhanced with categories, veg/non-veg indicators, and availability status
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UtensilsCrossed, ArrowLeft, Clock, Phone, Leaf } from 'lucide-react';
 import { Button } from '../components/Shared/Button';
 import { EmptyState } from '../components/Shared/EmptyState';
 import { Alert } from '../components/Shared/Alert';
 import { formatPrice, CATEGORIES } from '../utils/validation';
+import { trackEvent } from '../services/analyticsService';
 
 export const MenuViewPage = ({ menuData, stallData }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [viewStartTime] = useState(Date.now());
   
   const menuItems = menuData || [];
   const hasMenu = menuItems && menuItems.length > 0;
@@ -21,6 +23,28 @@ export const MenuViewPage = ({ menuData, stallData }) => {
   const stallName = stallData?.stallName || 'Quick Menu';
   const waitTime = stallData?.waitTime || '';
 
+  // 🎯 TRACK CUSTOMER MENU VIEW (Real Customer Data!)
+  useEffect(() => {
+    if (hasMenu) {
+      trackEvent('customer_menu_viewed', {
+        stallName,
+        itemCount: menuItems.length,
+        timestamp: Date.now(),
+        hasWaitTime: !!waitTime
+      });
+
+      // Track session duration when customer leaves
+      return () => {
+        const sessionDuration = Date.now() - viewStartTime;
+        trackEvent('customer_session_ended', {
+          stallName,
+          durationSeconds: Math.round(sessionDuration / 1000),
+          itemCount: menuItems.length
+        });
+      };
+    }
+  }, []); // Only on initial mount
+
   // Get categories that have items
   const availableCategories = ['All', ...new Set(menuItems.map(item => item.category || 'Other'))];
   
@@ -28,6 +52,30 @@ export const MenuViewPage = ({ menuData, stallData }) => {
   const filteredItems = selectedCategory === 'All' 
     ? menuItems 
     : menuItems.filter(item => (item.category || 'Other') === selectedCategory);
+
+  // 🎯 TRACK CUSTOMER CATEGORY SWITCHES
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    trackEvent('customer_category_viewed', {
+      category,
+      stallName,
+      itemCount: menuItems.filter(item => 
+        category === 'All' || (item.category || 'Other') === category
+      ).length
+    });
+  };
+
+  // 🎯 TRACK CUSTOMER ITEM CLICKS/VIEWS
+  const handleItemClick = (item) => {
+    trackEvent('customer_item_viewed', {
+      itemName: item.name,
+      itemPrice: item.price,
+      category: item.category,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable,
+      stallName
+    });
+  };
 
   // Group items by category for display
   const itemsByCategory = filteredItems.reduce((acc, item) => {
@@ -90,7 +138,7 @@ export const MenuViewPage = ({ menuData, stallData }) => {
                 {availableCategories.map(category => (
                   <button
                     key={category}
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => handleCategoryChange(category)}
                     className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-all flex-shrink-0 ${
                       selectedCategory === category
                         ? 'bg-primary-600 text-white shadow-lg'
@@ -128,7 +176,8 @@ export const MenuViewPage = ({ menuData, stallData }) => {
                 {items.map((item, index) => (
                   <div
                     key={item.id || index}
-                    className={`bg-white rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 p-6 border-2 ${
+                    onClick={() => handleItemClick(item)}
+                    className={`bg-white rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 p-6 border-2 cursor-pointer ${
                       item.isAvailable === false
                         ? 'border-gray-300 opacity-60'
                         : 'border-white hover:border-primary-300 transform hover:scale-[1.02] hover:-translate-y-1'

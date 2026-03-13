@@ -26,6 +26,7 @@ import {
   initializeMenu 
 } from '../services/menuCRUDService';
 import { validateMenuItem } from '../utils/validation';
+import { trackEvent } from '../services/analyticsService';
 
 // Create Context
 const UserContext = createContext(null);
@@ -159,6 +160,13 @@ export const UserProvider = ({ children }) => {
         // IMMEDIATE STATE UPDATE - Preview Screen will auto-refresh!
         setMenuItems(prev => [...prev, result.data]);
         
+        // Track analytics event
+        trackEvent('menu_item_added', {
+          item: result.data,
+          category: result.data.category,
+          isVeg: result.data.isVeg
+        });
+        
         console.log('✅ [UserContext] Item added & state updated globally');
         
         return {
@@ -218,6 +226,13 @@ export const UserProvider = ({ children }) => {
           item.id === id ? result.data : item
         ));
         
+        // Track analytics event
+        trackEvent('menu_item_updated', {
+          item: result.data,
+          category: result.data.category,
+          changes: Object.keys(updates)
+        });
+        
         console.log('✅ [UserContext] Item updated & state synced globally');
         
         return { success: true, error: null };
@@ -255,6 +270,12 @@ export const UserProvider = ({ children }) => {
       if (result.success) {
         // IMMEDIATE STATE UPDATE - Preview refreshes instantly!
         setMenuItems(prev => prev.filter(item => item.id !== id));
+        
+        // Track analytics event
+        trackEvent('menu_item_deleted', {
+          item: itemToDelete,
+          category: itemToDelete.category
+        });
         
         console.log('✅ [UserContext] Item deleted & state updated globally');
         return true;

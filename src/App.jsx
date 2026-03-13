@@ -21,6 +21,7 @@ import { DashboardLayout } from './pages/DashboardLayout';
 import { MenuViewPage } from './pages/MenuViewPage';
 import { RecipeBrowserPage } from './pages/RecipeBrowserPage';
 import { NotificationCenterPage } from './pages/NotificationCenterPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 import { LoginScreen } from './components/Auth/LoginScreen';
 import { RegisterScreen } from './components/Auth/RegisterScreen';
 import { NotificationPermissionBanner } from './components/Shared/NotificationPermissionBanner';
@@ -94,6 +95,7 @@ const AppRoutes = () => {
         <Route path="preview" element={<PreviewPage />} />
         <Route path="qr" element={<QRPage />} />
         <Route path="recipes" element={<RecipeBrowserPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="notifications" element={<NotificationCenterPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="edit/:itemId" element={<ItemEditScreen />} />

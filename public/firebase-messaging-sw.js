@@ -29,7 +29,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
  * - Firestore security rules
  */
 firebase.initializeApp({
-  apiKey: "AIzaSyCVGpxtdFWpGMR6Goe99hXMn-XW6Ca0FHw",
+  apiKey: "AIzaSyDAN8CSKhavsKa2F-X7mmypBuEmiXG7ec8",
   authDomain: "quickmenu-mad.firebaseapp.com",
   projectId: "quickmenu-mad",
   storageBucket: "quickmenu-mad.firebasestorage.app",

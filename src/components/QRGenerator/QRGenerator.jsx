@@ -11,6 +11,7 @@ import { EmptyState } from '../Shared/EmptyState';
 import { Alert } from '../Shared/Alert';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { useWebShare } from '../../hooks/useWebShare';
+import { trackEvent } from '../../services/analyticsService';
 
 export const QRGenerator = ({ 
   menuItems, 
@@ -52,6 +53,13 @@ export const QRGenerator = ({
       const url = `${productionURL}/#/view?m=${base64Data}`;
       
       setMenuUrl(url);
+      
+      // Track QR generation event
+      trackEvent('qr_generated', {
+        itemCount: menuItems.length,
+        stallName: stallData.stallName,
+        timestamp: Date.now()
+      });
     }
   }, [qrCodeUrl, menuItems, stallData]);
   
@@ -79,6 +87,14 @@ export const QRGenerator = ({
 
   const handleDownload = () => {
     onDownload();
+    
+    // Track download event
+    trackEvent('qr_downloaded', {
+      itemCount: menuItems.length,
+      stallName: stallData.stallName,
+      timestamp: Date.now()
+    });
+    
     onToast?.('QR code downloaded successfully! 🎉', 'success');
   };
   
