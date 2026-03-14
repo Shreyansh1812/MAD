@@ -16,6 +16,20 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
+// Build Firebase config from service worker registration URL query params.
+// This keeps repository code free of hardcoded keys.
+const swUrl = new URL(self.location.href);
+const swParams = swUrl.searchParams;
+
+const firebaseConfig = {
+  apiKey: swParams.get('apiKey') || '',
+  authDomain: swParams.get('authDomain') || '',
+  projectId: swParams.get('projectId') || '',
+  storageBucket: swParams.get('storageBucket') || '',
+  messagingSenderId: swParams.get('messagingSenderId') || '',
+  appId: swParams.get('appId') || '',
+};
+
 /**
  * Initialize Firebase in service worker context
  * 
@@ -28,17 +42,14 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
  * - API key restrictions in Google Cloud Console
  * - Firestore security rules
  */
-firebase.initializeApp({
-  apiKey: "AIzaSyDAN8CSKhavsKa2F-X7mmypBuEmiXG7ec8",
-  authDomain: "quickmenu-mad.firebaseapp.com",
-  projectId: "quickmenu-mad",
-  storageBucket: "quickmenu-mad.firebasestorage.app",
-  messagingSenderId: "242106387505",
-  appId: "1:242106387505:web:4f215cf7c48b2dba695910"
-});
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.messagingSenderId || !firebaseConfig.appId) {
+  console.error('[firebase-messaging-sw.js] Missing Firebase config in service worker URL params.');
+} else {
+  firebase.initializeApp(firebaseConfig);
+}
 
 // Get Firebase Messaging instance
-const messaging = firebase.messaging();
+const messaging = firebase.apps.length ? firebase.messaging() : null;
 
 /**
  * Handle background messages
@@ -50,7 +61,8 @@ const messaging = firebase.messaging();
  * 
  * When app is in foreground, use onMessage in fcmService.js instead
  */
-messaging.onBackgroundMessage((payload) => {
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
   // Extract notification data
@@ -88,8 +100,9 @@ messaging.onBackgroundMessage((payload) => {
    * TEACHING POINT: self.registration.showNotification() is the service worker
    * equivalent of new Notification() in the main thread
    */
-  return self.registration.showNotification(notificationTitle, notificationOptions);
-});
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+}
 
 /**
  * Handle notification click

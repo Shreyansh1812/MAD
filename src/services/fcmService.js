@@ -24,9 +24,49 @@ import notificationStorage from './notificationStorage';
 class FCMService {
   constructor() {
     this.messaging = null;
+    this.serviceWorkerRegistration = null;
     this.fcmToken = null;
     this.isSupported = false;
     this.initialized = false;
+  }
+
+  /**
+   * Build Firebase config map from env variables.
+   */
+  getFirebaseConfigFromEnv() {
+    return {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    };
+  }
+
+  /**
+   * Register service worker with Firebase config in query params.
+   */
+  async registerMessagingServiceWorker() {
+    const config = this.getFirebaseConfigFromEnv();
+
+    if (!config.apiKey || !config.projectId || !config.messagingSenderId || !config.appId) {
+      console.error('❌ [FCM] Missing Firebase config for service worker registration');
+      return null;
+    }
+
+    const params = new URLSearchParams();
+    Object.entries(config).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value.toString().trim());
+      }
+    });
+
+    const swUrl = `/firebase-messaging-sw.js?${params.toString()}`;
+    const registration = await navigator.serviceWorker.register(swUrl);
+    this.serviceWorkerRegistration = registration;
+
+    return registration;
   }
 
   /**
@@ -50,6 +90,9 @@ class FCMService {
       this.messaging = getMessaging(app);
       this.isSupported = true;
       this.initialized = true;
+
+      // Ensure the SW used by FCM is registered with runtime config.
+      await this.registerMessagingServiceWorker();
 
       // Set up foreground message handler
       this.setupForegroundHandler();
@@ -100,6 +143,7 @@ class FCMService {
       // Request token
       const token = await getToken(this.messaging, {
         vapidKey: vapidKey,
+        serviceWorkerRegistration: this.serviceWorkerRegistration || undefined,
       });
 
       if (token) {
