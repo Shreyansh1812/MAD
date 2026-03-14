@@ -17,6 +17,22 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Android / Capacitor local and secret files
+android/local.properties
+android/.gradle/
+android/**/build/
+android/.idea/
+android/captures/
+android/app/google-services.json
+android/key.properties
+android/app/release-keystore.jks
+android/**/*.jks
+android/**/*.keystore
+
+# Firebase credential files
+google-services.json
+GoogleService-Info.plist
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

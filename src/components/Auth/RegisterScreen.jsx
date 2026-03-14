@@ -5,8 +5,12 @@
  */
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../../lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
+import {
+  getGoogleSignInErrorMessage,
+  signInWithGoogleCrossPlatform,
+} from '../../services/googleAuthService';
 import { Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '../Shared/Button';
 import { Card, CardHeader, CardBody } from '../Shared/Card';
@@ -162,7 +166,7 @@ export const RegisterScreen = ({ onSwitchToLogin, onRegisterSuccess }) => {
     setErrors({ email: '', password: '', confirmPassword: '', auth: '' });
 
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInWithGoogleCrossPlatform();
       console.log('✅ Google Sign-In successful:', result.user.email);
       
       // Haptic feedback - success (20ms)
@@ -182,13 +186,8 @@ export const RegisterScreen = ({ onSwitchToLogin, onRegisterSuccess }) => {
         navigator.vibrate(50);
       }
       
-      let errorMessage = 'Google Sign-In failed';
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Sign-in cancelled';
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Popup blocked. Please allow popups and try again';
-      }
-      
+      const errorMessage = getGoogleSignInErrorMessage(error);
+
       setErrors({ ...errors, auth: errorMessage });
     } finally {
       setIsLoading(false);

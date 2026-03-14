@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">QuickMenu</string>
+    <string name="title_activity_main">QuickMenu</string>
+    <string name="package_name">com.quickmenu.vendor</string>
+    <string name="custom_url_scheme">com.quickmenu.vendor</string>
+</resources>
