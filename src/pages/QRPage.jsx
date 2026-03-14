@@ -67,19 +67,17 @@ export const QRPage = () => {
       console.log('👤 [QRPage] User UID:', currentUser.uid);
       console.log('📊 [QRPage] Menu items count:', menuItems.length);
 
-      // Compact menu data for URL encoding
+      // Compact menu data for URL encoding — keep only fields needed for display
       const compactData = menuItems.map(item => ({
-        n: item.name,
+        n: item.name?.substring(0, 40) || '',
         p: item.price,
-        d: item.description || '',
         c: item.category || 'Other',
         v: item.isVeg !== undefined ? item.isVeg : true,
-        a: item.isAvailable !== undefined ? item.isAvailable : true,
       }));
 
       const payload = {
         i: compactData,
-        s: stallData.stallName || '',
+        s: (stallData.stallName || '').substring(0, 40),
         w: stallData.waitTime || 0,
       };
 
@@ -92,11 +90,19 @@ export const QRPage = () => {
       const productionURL = 'https://mad-eosin.vercel.app';
       const menuUrl = `${productionURL}/view?m=${base64Data}`;
 
-      console.log('🔗 [QRPage] Generated URL:', menuUrl.substring(0, 100) + '...');
+      console.log('🔗 [QRPage] Generated URL length:', menuUrl.length, 'chars');
+
+      // Guard: QR codes cannot store more than ~2800 chars reliably
+      if (menuUrl.length > 2800) {
+        throw new Error(
+          `Menu data too large for QR code (${menuUrl.length} chars). Please reduce the number of menu items below ${Math.floor(menuItems.length * 2800 / menuUrl.length)}.`
+        );
+      }
 
       // Generate QR code using qrcode library
+      // errorCorrectionLevel 'L' gives maximum data capacity (~4296 chars)
       const qrDataUrl = await QRCode.toDataURL(menuUrl, {
-        errorCorrectionLevel: 'H',
+        errorCorrectionLevel: 'L',
         margin: 2,
         width: 400,
         color: {
@@ -298,7 +304,7 @@ export const QRPage = () => {
               </Button>
 
               {/* Debug Info (hidden in production) */}
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.DEV && (
                 <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
                   <p><strong>Debug Info:</strong></p>
                   <p>User ID: {currentUser?.uid}</p>
