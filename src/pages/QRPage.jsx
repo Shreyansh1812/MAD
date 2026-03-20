@@ -12,117 +12,67 @@
  */
 
 import { motion } from 'framer-motion';
-import { QrCode as QrCodeIcon, AlertCircle, Loader } from 'lucide-react';
+import { QrCode as QrCodeIcon, AlertCircle, Loader, Download, Package } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { useUserContext } from '../contexts/UserContext';
-import QRCode from 'qrcode';
 import { Card } from '../components/Shared/Card';
 import { Button } from '../components/Shared/Button';
 import { EmptyState } from '../components/Shared/EmptyState';
+import persistentQRService from '../services/persistentQRService';
+import offlineMenuRegistry from '../services/offlineMenuRegistry';
+import offlineBundleService from '../services/offlineBundleService';
+import { trackEvent } from '../services/analyticsService';
 
 export const QRPage = () => {
-  // ============================================
-  // REQUIREMENT 2: Global State Integration
-  // Pull uid from UserContext to ensure navigation doesn't lose session
-  // ============================================
-  const { 
-    currentUser,      // User object with uid
-    authLoading,      // Check if auth is still loading
-    menuItems, 
+  const {
+    currentUser,
+    authLoading,
+    menuItems,
     stallData,
-    isLoading         // Check if menu data is loading
+    isLoading,
   } = useUserContext();
 
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  const [qrDetails, setQrDetails] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
 
-  // ============================================
-  // REQUIREMENT 3: Dynamic URL Generation
-  // Use Vercel production URL with uid
-  // ============================================
   const generateQRCode = useCallback(async () => {
-    // Validate we have all required data
     if (!currentUser || !currentUser.uid) {
       console.error('❌ [QRPage] No user UID available');
       setError('User session not found. Please try logging in again.');
       return;
     }
 
-    if (!menuItems || menuItems.length === 0) {
-      console.log('ℹ️ [QRPage] No menu items to generate QR');
-      setQrCodeUrl(null);
-      return;
-    }
-
-    // ============================================
-    // REQUIREMENT 4: Error Handling
-    // Wrap QR generation in try-catch with specific logging
-    // ============================================
     setIsGenerating(true);
     setError(null);
 
     try {
-      console.log('🔄 [QRPage] Starting QR generation...');
-      console.log('👤 [QRPage] User UID:', currentUser.uid);
-      console.log('📊 [QRPage] Menu items count:', menuItems.length);
-
-      // Compact menu data for URL encoding — keep only fields needed for display
-      const compactData = menuItems.map(item => ({
-        n: item.name?.substring(0, 40) || '',
-        p: item.price,
-        c: item.category || 'Other',
-        v: item.isVeg !== undefined ? item.isVeg : true,
-      }));
-
-      const payload = {
-        i: compactData,
-        s: (stallData.stallName || '').substring(0, 40),
-        w: stallData.waitTime || 0,
-      };
-
-      // Generate encoded URL
-      const jsonString = JSON.stringify(payload);
-      const encodedJSON = encodeURIComponent(jsonString);
-      const base64Data = btoa(encodedJSON);
-
-      // REQUIREMENT 3: Use production Vercel URL
-      const productionURL = 'https://mad-eosin.vercel.app';
-      const menuUrl = `${productionURL}/view?m=${base64Data}`;
-
-      console.log('🔗 [QRPage] Generated URL length:', menuUrl.length, 'chars');
-
-      // Guard: QR codes cannot store more than ~2800 chars reliably
-      if (menuUrl.length > 2800) {
-        throw new Error(
-          `Menu data too large for QR code (${menuUrl.length} chars). Please reduce the number of menu items below ${Math.floor(menuItems.length * 2800 / menuUrl.length)}.`
-        );
-      }
-
-      // Generate QR code using qrcode library
-      // errorCorrectionLevel 'L' gives maximum data capacity (~4296 chars)
-      const qrDataUrl = await QRCode.toDataURL(menuUrl, {
-        errorCorrectionLevel: 'L',
-        margin: 2,
+      const result = await persistentQRService.generatePersistentQR(currentUser.uid, {
+        includeSnapshot: true,
+        menuItems,
+        stallData,
+        errorCorrectionLevel: 'M',
         width: 400,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
       });
 
-      setQrCodeUrl(qrDataUrl);
-      console.log('✅ [QRPage] QR code generated successfully');
+      setQrCodeUrl(result.image);
+      setQrDetails({
+        vendorId: result.payload.vid,
+        channelId: result.payload.c,
+        tokenLength: result.token.length,
+        urlLength: result.url.length,
+      });
+
+      trackEvent('qr_generated', {
+        vendorId: result.payload.vid,
+        tokenLength: result.token.length,
+        mode: 'persistent',
+      });
 
     } catch (err) {
-      // REQUIREMENT 4: Specific error logging
       console.error('❌ [QRPage] QR generation failed:', err);
-      console.error('❌ [QRPage] Error details:', {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-      });
-      
       setError(`QR generation failed: ${err.message}`);
       setQrCodeUrl(null);
     } finally {
@@ -130,33 +80,70 @@ export const QRPage = () => {
     }
   }, [currentUser, menuItems, stallData]);
 
-  // Auto-generate QR when menu or user changes
+  const exportOfflineBundle = useCallback(async () => {
+    if (!currentUser?.uid) {
+      setError('Cannot export bundle without an authenticated vendor.');
+      return;
+    }
+
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      // Ensure latest state is captured before export.
+      offlineMenuRegistry.upsertMenuSnapshot(currentUser.uid, {
+        channelId: `menu-${currentUser.uid}`,
+        version: Date.now(),
+        updatedAt: new Date().toISOString(),
+        stallData,
+        menuItems,
+        source: 'bundle-export',
+      });
+
+      const { bundle, encoded } = await offlineMenuRegistry.exportEncodedBundle(currentUser.uid, true);
+      offlineBundleService.downloadBundle(encoded, currentUser.uid, bundle.version);
+
+      trackEvent('offline_bundle_exported', {
+        vendorId: currentUser.uid,
+        version: bundle.version,
+        size: encoded.length,
+      });
+    } catch (err) {
+      console.error('❌ [QRPage] Failed to export offline bundle:', err);
+      setError(`Failed to export offline bundle: ${err.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [currentUser, menuItems, stallData]);
+
+  // Generate once identity is available. Payload remains fixed for that vendor.
   useEffect(() => {
-    if (!authLoading && !isLoading && currentUser && menuItems.length > 0) {
+    const hasIdentity = currentUser?.uid ? Boolean(persistentQRService.getVendorIdentity(currentUser.uid)) : false;
+    const canGenerate = Boolean(currentUser) && (menuItems.length > 0 || hasIdentity);
+
+    if (!authLoading && !isLoading && canGenerate) {
       generateQRCode();
     }
-  }, [currentUser, menuItems, stallData, authLoading, isLoading, generateQRCode]);
+  }, [currentUser, authLoading, isLoading, menuItems.length, generateQRCode]);
 
-  // Handle QR download
   const handleDownload = () => {
     if (!qrCodeUrl) return;
 
     try {
       const link = document.createElement('a');
-      link.download = `${stallData.stallName || 'menu'}-qr-code.png`;
+      link.download = `${stallData.stallName || 'menu'}-persistent-qr.png`;
       link.href = qrCodeUrl;
       link.click();
-      console.log('✅ [QRPage] QR code downloaded');
+      trackEvent('qr_downloaded', {
+        vendorId: currentUser?.uid || 'unknown',
+        mode: 'persistent',
+      });
     } catch (err) {
       console.error('❌ [QRPage] Download failed:', err);
       setError('Failed to download QR code');
     }
   };
 
-  // ============================================
-  // REQUIREMENT 1: Data Guarding
-  // Show loading spinner if data is still loading
-  // ============================================
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
@@ -180,7 +167,6 @@ export const QRPage = () => {
     );
   }
 
-  // Check if user session is missing
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pb-20">
@@ -215,17 +201,15 @@ export const QRPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <QrCodeIcon className="w-6 h-6 text-purple-600" />
-            <h1 className="text-2xl font-bold text-gray-800">QR Code</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Permanent QR</h1>
           </div>
-          {menuItems.length > 0 && (
-            <button
-              onClick={generateQRCode}
-              disabled={isGenerating}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {isGenerating ? 'Generating...' : 'Refresh'}
-            </button>
-          )}
+          <button
+            onClick={generateQRCode}
+            disabled={isGenerating}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {isGenerating ? 'Generating...' : 'Regenerate Image'}
+          </button>
         </div>
       </motion.div>
 
@@ -251,19 +235,12 @@ export const QRPage = () => {
           </motion.div>
         )}
 
-        {/* REQUIREMENT 1: Show appropriate state based on data */}
-        {menuItems.length === 0 ? (
-          <EmptyState
-            icon={QrCodeIcon}
-            title="No Items Added"
-            description="Add menu items in the Editor to generate a QR code"
-          />
-        ) : isGenerating ? (
+        {isGenerating ? (
           <Card>
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <Loader className="w-16 h-16 text-purple-600 animate-spin mb-4" />
-              <p className="text-xl font-semibold text-gray-700">Generating QR Code...</p>
-              <p className="text-sm text-gray-500 mt-2">Creating your shareable menu</p>
+              <p className="text-xl font-semibold text-gray-700">Generating Permanent QR...</p>
+              <p className="text-sm text-gray-500 mt-2">This QR remains valid across all future menu updates</p>
             </div>
           </Card>
         ) : qrCodeUrl ? (
@@ -289,21 +266,48 @@ export const QRPage = () => {
                 </h3>
                 <ol className="text-sm text-blue-800 space-y-2">
                   <li>1. Download the QR code below</li>
-                  <li>2. Print it or display on your device</li>
-                  <li>3. Customers scan to view menu instantly</li>
-                  <li className="font-bold">4. Works 100% offline! 🎉</li>
+                  <li>2. Print it once and keep it fixed</li>
+                  <li>3. Share offline update bundles whenever menu changes</li>
+                  <li className="font-bold">4. QR never needs replacement</li>
                 </ol>
               </div>
+
+              {qrDetails && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-700">
+                  <p className="font-semibold mb-2">Payload Details</p>
+                  <p>Vendor ID: {qrDetails.vendorId}</p>
+                  <p>Channel: {qrDetails.channelId}</p>
+                  <p>QR token length: {qrDetails.tokenLength} chars</p>
+                  <p>URL length: {qrDetails.urlLength} chars</p>
+                </div>
+              )}
+
+              {menuItems.length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  title="No menu items yet"
+                  description="You can still keep this permanent QR. Add items later and export update bundles."
+                />
+              ) : (
+                <Button
+                  onClick={exportOfflineBundle}
+                  disabled={isExporting}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
+                >
+                  <Package className="w-5 h-5 mr-2" />
+                  {isExporting ? 'Exporting Update Bundle...' : 'Export Offline Update Bundle'}
+                </Button>
+              )}
 
               {/* Download Button */}
               <Button
                 onClick={handleDownload}
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
               >
-                Download QR Code
+                <Download className="w-5 h-5 mr-2" />
+                Download Permanent QR
               </Button>
 
-              {/* Debug Info (hidden in production) */}
               {import.meta.env.DEV && (
                 <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
                   <p><strong>Debug Info:</strong></p>

@@ -27,6 +27,7 @@ import {
 } from '../services/menuCRUDService';
 import { validateMenuItem } from '../utils/validation';
 import { trackEvent } from '../services/analyticsService';
+import offlineMenuRegistry from '../services/offlineMenuRegistry';
 
 // Create Context
 const UserContext = createContext(null);
@@ -69,6 +70,25 @@ export const UserProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const syncOfflineSnapshot = useCallback((items, stall, version = Date.now(), updatedAt = null, source = 'local') => {
+    if (!currentUser?.uid) {
+      return;
+    }
+
+    try {
+      offlineMenuRegistry.upsertMenuSnapshot(currentUser.uid, {
+        channelId: `menu-${currentUser.uid}`,
+        version,
+        updatedAt: updatedAt || new Date().toISOString(),
+        stallData: stall,
+        menuItems: items,
+        source,
+      });
+    } catch (syncError) {
+      console.error('Offline snapshot sync failed:', syncError);
+    }
+  }, [currentUser]);
+
   // ============================================
   // AUTHENTICATION LISTENER
   // Similar to: Android observeForever() or collectAsState()
@@ -92,7 +112,7 @@ export const UserProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [syncOfflineSnapshot]);
 
   // ============================================
   // LOAD MENU FROM FIREBASE
@@ -107,15 +127,27 @@ export const UserProvider = ({ children }) => {
       
       if (menuData) {
         console.log('✅ [UserContext] Menu loaded:', menuData.items?.length || 0, 'items');
-        setMenuItems(menuData.items || []);
-        setStallData({
+        const loadedItems = menuData.items || [];
+        const loadedStallData = {
           stallName: menuData.stallName || '',
           waitTime: menuData.waitTime || 0
-        });
+        };
+
+        setMenuItems(loadedItems);
+        setStallData(loadedStallData);
+
+        syncOfflineSnapshot(
+          loadedItems,
+          loadedStallData,
+          menuData.updatedAt ? Date.parse(menuData.updatedAt) || Date.now() : Date.now(),
+          menuData.updatedAt || null,
+          'firebase-load'
+        );
       } else {
         console.log('ℹ️ [UserContext] No menu found - initializing...');
         await initializeMenu();
         setMenuItems([]);
+        syncOfflineSnapshot([], { stallName: '', waitTime: 0 }, Date.now(), null, 'firebase-init');
       }
       
       setError(null);
@@ -125,7 +157,7 @@ export const UserProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [menuItems, stallData, syncOfflineSnapshot]);
 
   // ============================================
   // ADD MENU ITEM (CRUD - Create)
@@ -158,7 +190,9 @@ export const UserProvider = ({ children }) => {
       
       if (result.success) {
         // IMMEDIATE STATE UPDATE - Preview Screen will auto-refresh!
-        setMenuItems(prev => [...prev, result.data]);
+        const nextItems = [...menuItems, result.data];
+        setMenuItems(nextItems);
+        syncOfflineSnapshot(nextItems, stallData, Date.now(), null, 'vendor-update');
         
         // Track analytics event
         trackEvent('menu_item_added', {
@@ -222,9 +256,11 @@ export const UserProvider = ({ children }) => {
 
       if (result.success) {
         // IMMEDIATE STATE UPDATE - All screens refresh automatically!
-        setMenuItems(prev => prev.map(item => 
+        const nextItems = menuItems.map(item => 
           item.id === id ? result.data : item
-        ));
+        );
+        setMenuItems(nextItems);
+        syncOfflineSnapshot(nextItems, stallData, Date.now(), null, 'vendor-update');
         
         // Track analytics event
         trackEvent('menu_item_updated', {
@@ -249,7 +285,7 @@ export const UserProvider = ({ children }) => {
         error: err.message || 'Failed to update item',
       };
     }
-  }, [menuItems]);
+  }, [menuItems, stallData, syncOfflineSnapshot]);
 
   // ============================================
   // DELETE MENU ITEM (CRUD - Delete)
@@ -269,7 +305,9 @@ export const UserProvider = ({ children }) => {
       
       if (result.success) {
         // IMMEDIATE STATE UPDATE - Preview refreshes instantly!
-        setMenuItems(prev => prev.filter(item => item.id !== id));
+        const nextItems = menuItems.filter(item => item.id !== id);
+        setMenuItems(nextItems);
+        syncOfflineSnapshot(nextItems, stallData, Date.now(), null, 'vendor-update');
         
         // Track analytics event
         trackEvent('menu_item_deleted', {
@@ -287,7 +325,7 @@ export const UserProvider = ({ children }) => {
       console.error('❌ [UserContext] Error deleting item:', err);
       return false;
     }
-  }, [menuItems]);
+  }, [menuItems, stallData, syncOfflineSnapshot]);
 
   // ============================================
   // UPDATE STALL SETTINGS
@@ -296,7 +334,8 @@ export const UserProvider = ({ children }) => {
   const updateStallData = useCallback((newData) => {
     console.log('🏪 [UserContext] Updating stall data:', newData);
     setStallData(newData);
-  }, []);
+    syncOfflineSnapshot(menuItems, newData, Date.now(), null, 'stall-update');
+  }, [menuItems, syncOfflineSnapshot]);
 
   // ============================================
   // LOGOUT FUNCTION
