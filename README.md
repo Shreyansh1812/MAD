@@ -59,39 +59,55 @@
 
 ```
 src/
-├── components/          # UI Components (Single Responsibility)
-│   ├── MenuEditor/      # Menu CRUD interface
+├── components/          # UI Components
+│   ├── Auth/            # Login and registration screens
+│   ├── MenuEditor/      # Menu CRUD interface and stall settings
 │   ├── MenuPreview/     # Customer-facing preview with categories
-│   ├── QRGenerator/     # QR code generation & download
-│   └── Shared/          # Reusable components
-│       ├── Button.jsx           # Haptic-enabled button
-│       ├── Input.jsx
-│       ├── Card.jsx
-│       ├── Alert.jsx
-│       ├── Toast.jsx
-│       ├── EmptyState.jsx
-│       └── InstallBanner.jsx    # PWA install UI
+│   ├── QRGenerator/     # QR code generation, sharing, and download
+│   └── Shared/          # Reusable UI primitives and banners
+├── contexts/            # Global app state
+│   └── UserContext.jsx
 ├── hooks/               # Custom React Hooks
-│   ├── useMenu.js       # Menu state management
-│   ├── useQRCode.js     # QR generation logic
-│   ├── useLocalMenu.js  # Menu viewing from QR
-│   ├── useHaptics.js    # Vibration API wrapper
-│   ├── usePWAInstall.js # PWA install prompt management
-│   ├── useWakeLock.js   # Screen wake lock
-│   ├── useWebShare.js   # Native share API
-│   └── usePullToRefresh.js # Disable pull-to-refresh
-├── services/            # Business Logic Layer
-│   ├── storageService.js   # LocalStorage abstraction
-│   └── qrService.js        # QR code operations
-├── utils/               # Helper Functions
-│   ├── validation.js    # Input validation & formatting
-│   └── motionConfig.js  # Material Design motion specs
+│   ├── useFCM.js
+│   ├── useHaptics.js
+│   ├── useLocalMenu.js
+│   ├── useMenu.js
+│   ├── useNotifications.js
+│   ├── usePWAInstall.js
+│   ├── usePullToRefresh.js
+│   ├── useQRCode.js
+│   ├── useRecipeData.js
+│   ├── useToast.js
+│   ├── useWakeLock.js
+│   └── useWebShare.js
 ├── pages/               # Page Components
-│   ├── EditorPage.jsx   # Vendor interface (tab navigation)
-│   └── MenuViewPage.jsx # Customer view
-├── styles/              # Global Styles
-│   └── index.css        # Tailwind + Custom CSS
-└── main.jsx             # Application Entry Point
+│   ├── EditorPageNew.jsx
+│   ├── PreviewPage.jsx
+│   ├── QRPage.jsx
+│   ├── DashboardLayout.jsx
+│   ├── MenuViewPage.jsx
+│   ├── NotificationCenterPage.jsx
+│   ├── RecipeBrowserPage.jsx
+│   ├── AnalyticsPage.jsx
+│   ├── AccountPage.jsx
+│   └── ItemEditScreen.jsx
+├── services/            # Business Logic Layer
+│   ├── analyticsService.js
+│   ├── analyticsStorage.js
+│   ├── fcmService.js
+│   ├── menuCRUDService.js
+│   ├── notificationService.js
+│   ├── notificationStorage.js
+│   ├── offlineBundleService.js
+│   ├── offlineMenuRegistry.js
+│   ├── persistentQRService.js
+│   ├── qrService.js
+│   └── storageService.js
+├── utils/               # Helper Functions
+│   ├── motionConfig.js
+│   └── validation.js
+└── lib/
+   └── firebase.js
 ```
 
 ### Key Design Patterns
@@ -182,9 +198,13 @@ Output will be in the `dist/` folder. Deploy to any static hosting service.
 | Technology | Purpose |
 |------------|---------|
 | **React 18.2** | UI framework |
+| **React Router 7.13** | Screen routing |
 | **Vite 5.0** | Build tool & dev server |
 | **Tailwind CSS 3.3** | Styling framework |
-| **Framer Motion 11.x** | Android Material Design animations |
+| **Framer Motion 12.26** | UI animations |
+| **Capacitor 8.2** | Android packaging and native integration |
+| **Firebase 12.8** | Authentication, analytics, and cloud services |
+| **Recharts 3.7** | Analytics charts |
 | **qrcode** | QR code generation |
 | **lucide-react** | Icon library |
 | **LocalStorage API** | Offline data persistence |
@@ -214,7 +234,7 @@ Output will be in the `dist/` folder. Deploy to any static hosting service.
 - Custom install banner appears on first visit
 - Triggers native Android "Add to Home screen" dialog
 - Only shows when app is installable and not already installed
-- See: [PWA_INSTALL_GUIDE.md](PWA_INSTALL_GUIDE.md)
+- Implemented in [src/components/Shared/InstallBanner.jsx](src/components/Shared/InstallBanner.jsx) and [src/hooks/usePWAInstall.js](src/hooks/usePWAInstall.js)
 
 ### 2. **Haptic Feedback**
 - Light tap (20ms) on button clicks
@@ -226,7 +246,7 @@ Output will be in the `dist/` folder. Deploy to any static hosting service.
 - Automatically activates when QR code is displayed
 - Prevents screen from dimming while customers scan
 - Releases when navigating away
-- See: [ANDROID_TESTING.md](ANDROID_TESTING.md)
+- See [src/hooks/useWakeLock.js](src/hooks/useWakeLock.js) and [public/test-share.html](public/test-share.html)
 
 ### 4. **Native Share**
 - "Share Menu" button triggers Android share sheet
@@ -239,7 +259,7 @@ Output will be in the `dist/` folder. Deploy to any static hosting service.
 - Slide from right (forward), slide from left (backward)
 - Stagger animations on category switch
 - Spring physics for tab indicator (stiffness: 300, damping: 30, mass: 1.2)
-- See: [MATERIAL_MOTION.md](MATERIAL_MOTION.md)
+- See [src/utils/motionConfig.js](src/utils/motionConfig.js)
 
 ### 6. **Category Navigation**
 - Horizontal scrollable pill-shaped tabs
@@ -445,8 +465,8 @@ To test:
 
 ### Menu view not loading?
 
-- **Check**: QR URL contains `#menu=` parameter
-- **Fix**: Regenerate QR code from editor
+- **Check**: QR URL contains `/view?q=` for persistent QR codes or the legacy `/#/view?m=` hash format for older offline QR codes
+- **Fix**: Regenerate the QR from the current QR screen if the URL is using an older format
 
 ---
 
@@ -514,11 +534,11 @@ Perfect for learning modern Android-focused web development! 🚀
 
 ## 📚 Additional Documentation
 
-- **[PWA_INSTALL_GUIDE.md](PWA_INSTALL_GUIDE.md)** - Complete PWA installation testing guide
-- **[ANDROID_TESTING.md](ANDROID_TESTING.md)** - Android-specific features testing
-- **[MATERIAL_MOTION.md](MATERIAL_MOTION.md)** - Material Design motion specifications
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick setup guide
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment instructions
+- **[src/components/Shared/InstallBanner.jsx](src/components/Shared/InstallBanner.jsx)** - PWA install banner implementation
+- **[src/hooks/useWakeLock.js](src/hooks/useWakeLock.js)** - Wake Lock support
+- **[src/utils/motionConfig.js](src/utils/motionConfig.js)** - Motion specs used by the UI
+- **[src/App.jsx](src/App.jsx)** - Current route structure
+- **[vite.config.js](vite.config.js)** - PWA and build configuration
 
 ---
 
